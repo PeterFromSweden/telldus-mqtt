@@ -2,7 +2,15 @@ include( FindPackageHandleStandardArgs )
 
 message( STATUS "Findmosquitto.cmake" )
 
-list( APPEND CMAKE_PREFIX_PATH "C:/Program Files (x86)/mosquitto" )
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  list( APPEND CMAKE_PREFIX_PATH "/usr" )
+  message(STATUS "Linux")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+  list( APPEND CMAKE_PREFIX_PATH "C:/Program Files (x86)/mosquitto" )
+  message(STATUS "Windows")
+else()
+  message(FATAL_ERROR "Only Linux and Windows targets currently supported!")
+endif()
 
 find_path(
   MOSQUITTO_INCLUDE_DIR
