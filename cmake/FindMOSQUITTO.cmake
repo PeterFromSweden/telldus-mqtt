@@ -1,6 +1,6 @@
 include( FindPackageHandleStandardArgs )
 
-message( STATUS "Findmosquitto.cmake" )
+message( STATUS "FindMOSQUITTO.cmake" )
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   list( APPEND CMAKE_PREFIX_PATH "/usr" )
@@ -33,5 +33,5 @@ if( MOSQUITTO_FOUND )
   set( MOSQUITTO_INCLUDE_DIRS "${MOSQUITTO_INCLUDE_DIR}" )
   set( MOSQUITTO_LIBRARIES "${MOSQUITTO_LIBRARY}" )
 else()
-  message( STATUS "mosquitto NOT PACKAGES_FOUND" )
+  message( STATUS "MOSQUITTO NOT PACKAGES_FOUND" )
 endif()
