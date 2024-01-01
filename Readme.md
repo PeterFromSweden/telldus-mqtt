@@ -1,4 +1,4 @@
-# TelldusCodeMQTT
+# telldus-core-mqtt
 Embryo of telldus - MQTT converter
 
 ## Ubuntu 20.04
@@ -31,15 +31,15 @@ To fix library path (if troublesome)
 export LD_LIBRARY_PATH=/usr/local/lib
 ```
 
-### Build TelldusCoreMQTT
+### Build telldus-core-mqtt
 ```bash
-cd <TelldusCoreMQTT>
+cd <telldus-core-mqtt>
 cmake -B build
 cmake --build build
 ```
-Run TelldusCoreMQTT...
+Run telldus-core-mqtt...
 
-### Build TelldusCoreMQTT
+### Build telldus-core-mqtt
 ```bash
 sudo cmake --install build
 ```
@@ -67,15 +67,15 @@ http://download.telldus.com/TellStick/Software/TelldusCenter/TelldusCenter-2.1.2
 NOTE: Browser tricks needed nowadays to download non-https links!
 
 
-### Build TelldusCoreMQTT
+### Build telldus-core-mqtt
 ```bash
-cd <TelldusCoreMQTT>
+cd <telldus-core-mqtt>
 cmake -B build
 cmake --build build
 ```
-Run TelldusCoreMQTT...
+Run telldus-core-mqtt...
 
-### Build TelldusCoreMQTT
+### Build telldus-core-mqtt
 ```bash
 sudo cmake --install build
 ```
