@@ -1,7 +1,9 @@
 #include <stdio.h>
+#include <string.h>
 #include <mosquitto.h>
 #include <mqtt_protocol.h>
 #include <telldus-core.h>
+#include "config.h"
 
 static void telldusDeviceEvent(int deviceId, int method, const char* data, int callbackId, void* context);
 static void telldusDeviceChangeEvent(int deviceId, int changeEvent, int changeType, int callbackId, void* context);
@@ -9,6 +11,7 @@ static void telldusRawDeviceEvent(const char* data, int controllerId, int callba
 static void telldusSensorEvent(const char* protocol, const char* model, int id, int dataType, const char* value, int timestamp, int callbackId, void* context);
 static void telldusControllerEvent(int controllerId, int changeEvent, int changeType, const char* newValue, int callbackId, void* context);
 
+static Config config;
 static struct mosquitto* mosq;
 
 static char serial[12];
@@ -95,6 +98,18 @@ static void telldusSensorEvent(const char* protocol, const char* model, int id, 
    * application dependent. */
   snprintf(payload, sizeof(payload), "%s", value);
 
+  
+  char dataDypeStr[20] = "NYI";
+  switch ( dataType )
+  {
+  case TELLSTICK_TEMPERATURE:
+    sprintf(dataDypeStr, "temp");
+    break;
+  case TELLSTICK_HUMIDITY:
+    sprintf(dataDypeStr, "hum");
+    break;
+  }
+
   /* Publish the message
    * mosq - our client instance
    * *mid = NULL - we don't want to know what the message id for this message is
@@ -105,7 +120,7 @@ static void telldusSensorEvent(const char* protocol, const char* model, int id, 
    * retain = false - do not use the retained message feature for this message
    */
   char topic[70];
-  snprintf(topic, sizeof(topic), "telldus/%s/%s/%s/%i/%i", serial, protocol, model, id, dataType);
+  snprintf(topic, sizeof(topic), "telldus/%s/%s/%i/%s", protocol, model, id, dataDypeStr);
   rc = mosquitto_publish(mosq, NULL, topic, strlen(payload), payload, 0, false);
   if ( rc != MOSQ_ERR_SUCCESS ) {
     fprintf(stderr, "Error publishing: %s\n", mosquitto_strerror(rc));
@@ -122,6 +137,22 @@ int main(int argc, char *argv[])
 {
   printf("main\r\n");
   
+  Config_Init(&config);
+  Config_Load(&config, "telldus-core-mqtt.json");
+
+  // Telldus-core lib
+  tdInit();
+  if ( getTelldusController() != 1 )
+  {
+    fprintf(stderr, "Error: No connected telldus device?!?\r\n");
+    return 1;
+  }
+
+  evtController = tdRegisterControllerEvent(&telldusControllerEvent, NULL);
+  evtSensor = tdRegisterSensorEvent(&telldusSensorEvent, NULL);
+  evtDevice = tdRegisterDeviceEvent(&telldusDeviceEvent, NULL);
+  evtDeviceChange = tdRegisterDeviceChangeEvent(&telldusDeviceChangeEvent, NULL);
+
   // Mosquitto lib
   /* Required before calling other mosquitto functions */
   mosquitto_lib_init();
@@ -134,7 +165,7 @@ int main(int argc, char *argv[])
    * clean session = true -> the broker should remove old sessions when we connect
    * obj = NULL -> we aren't passing any of our private data for callbacks
    */
-  mosq = mosquitto_new(NULL, true, NULL);
+  mosq = mosquitto_new(serial, true, NULL);
   if ( mosq == NULL ) {
     fprintf(stderr, "Error: Out of memory.\n");
     return 1;
@@ -164,18 +195,6 @@ int main(int argc, char *argv[])
     return 1;
   }
 
-  // Telldus-core lib
-  tdInit();
-  if ( getTelldusController() != 1 )
-  {
-    fprintf(stderr, "Error: No connected telldus device?!?\r\n");
-    return 1;
-  }
-
-  evtController = tdRegisterControllerEvent(&telldusControllerEvent, NULL);
-  evtSensor = tdRegisterSensorEvent(&telldusSensorEvent, NULL);
-  evtDevice = tdRegisterDeviceEvent(&telldusDeviceEvent, NULL);
-  evtDeviceChange = tdRegisterDeviceChangeEvent(&telldusDeviceChangeEvent, NULL);
 
   /* At this point the client is connected to the network socket, but may not
  * have completed CONNECT/CONNACK.
