@@ -1,17 +1,29 @@
 {
-  "name": "Awesome 4K",
-  "resolutions": [
+  "host": "127.0.0.1",
+  "port": 1883,
+  "user": "",
+  "pass": "",
+  "filter-non-transled": "yes",
+  "topic-translation": [
     {
-      "width": 1280,
-      "height": 720
+      "input": "telldus/fineoffset/temperaturehumidity/167",
+      "output": "Hall"
     },
     {
-      "width": 1920,
-      "height": 1080
+      "input": "telldus/fineoffset/temperaturehumidity/183",
+      "output": "Kitchen"
     },
     {
-      "width": 3840,
-      "height": 2160
+      "input": "telldus/fineoffset/temperaturehumidity/231",
+      "output": "Laundry"
+    },
+    {
+      "input": "telldus/mandolyn/temperaturehumidity/11",
+      "output": "Shed"
+    },
+    {
+      "input": "telldus/oregon/1A2D/227",
+      "output": "Neighbor"
     }
   ]
 }

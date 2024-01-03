@@ -16,10 +16,12 @@ static struct mosquitto* mosq;
 
 static char serial[12];
 static char firmware[12];
-static int evtController;
-static int evtSensor;
+
 static int evtDevice;
 static int evtDeviceChange;
+static int evtRawDevice;
+static int evtController;
+static int evtSensor;
 
 
 /* Callback called when the client receives a CONNACK message from the broker. */
@@ -49,7 +51,7 @@ static void on_connect(struct mosquitto* mosq, void* obj, int reason_code)
  * received a PUBCOMP from the broker. */
 static void on_publish(struct mosquitto* mosq, void* obj, int mid)
 {
-  printf("Message with mid %d has been published.\n", mid);
+  //printf("Message with mid %d has been published.\n", mid);
 }
 
 
@@ -73,22 +75,23 @@ static int getTelldusController(void)
 
 static void telldusDeviceEvent(int deviceId, int method, const char* data, int callbackId, void* context)
 {
-  printf("telldusDeviceEvent %i, %i, %s, %i\r\n", deviceId, method, data, callbackId);
+  printf("NYI:telldusDeviceEvent %i, %i, %s, %i\r\n", deviceId, method, data, callbackId);
 }
 
 static void telldusDeviceChangeEvent(int deviceId, int changeEvent, int changeType, int callbackId, void* context)
 {
-  printf("telldusDeviceChangeEvent %i, %i, %i, %i\r\n", deviceId, changeEvent, changeType, callbackId);
+  printf("NYI:telldusDeviceChangeEvent %i, %i, %i, %i\r\n", deviceId, changeEvent, changeType, callbackId);
 }
 
 static void telldusRawDeviceEvent(const char* data, int controllerId, int callbackId, void* context)
 {
-  printf("telldusRawDeviceEvent %s, %i, %i\r\n", data, controllerId, callbackId);
+  printf("NYI:telldusRawDeviceEvent %s, %i, %i\r\n", data, controllerId, callbackId);
+  //telldusRawDeviceEvent class :sensor; protocol:fineoffset; id : 167; model:temperaturehumidity; humidity : 44; temp:15.8; , 2, 5
 }
 
 static void telldusSensorEvent(const char* protocol, const char* model, int id, int dataType, const char* value, int timestamp, int callbackId, void* context) 
 {
-  printf("telldusSensorEvent %s, %s, %i, %i, %s, %i, %i\r\n", protocol, model, id, dataType, value, timestamp, callbackId);
+  //printf("telldusSensorEvent %s, %s, %i, %i, %s, %i, %i\r\n", protocol, model, id, dataType, value, timestamp, callbackId);
   char payload[20];
   int temp;
   int rc;
@@ -119,11 +122,22 @@ static void telldusSensorEvent(const char* protocol, const char* model, int id, 
    * qos = 2 - publish with QoS 2 for this example
    * retain = false - do not use the retained message feature for this message
    */
+  char telldusTopic[70];
+  snprintf(telldusTopic, sizeof(telldusTopic), "telldus/%s/%s/%i/%s", protocol, model, id, dataDypeStr);
   char topic[70];
-  snprintf(topic, sizeof(topic), "telldus/%s/%s/%i/%s", protocol, model, id, dataDypeStr);
+  if ( Config_GetTopicTranslation(&config, telldusTopic, topic, sizeof(topic)) )
+  {
+    // No match
+    strncpy(topic, telldusTopic, sizeof(topic));
+  }
   rc = mosquitto_publish(mosq, NULL, topic, strlen(payload), payload, 0, false);
   if ( rc != MOSQ_ERR_SUCCESS ) {
+
     fprintf(stderr, "Error publishing: %s\n", mosquitto_strerror(rc));
+  }
+  else
+  {
+    //printf("Published %s = '%s'\r\n", topic, payload);
   }
 }
 
@@ -139,7 +153,7 @@ int main(int argc, char *argv[])
   
   Config_Init(&config);
   Config_Load(&config, "telldus-core-mqtt.json");
-
+  
   // Telldus-core lib
   tdInit();
   if ( getTelldusController() != 1 )
@@ -152,6 +166,7 @@ int main(int argc, char *argv[])
   evtSensor = tdRegisterSensorEvent(&telldusSensorEvent, NULL);
   evtDevice = tdRegisterDeviceEvent(&telldusDeviceEvent, NULL);
   evtDeviceChange = tdRegisterDeviceChangeEvent(&telldusDeviceChangeEvent, NULL);
+  //evtRawDevice = tdRegisterRawDeviceEvent(&telldusRawDeviceEvent, NULL);
 
   // Mosquitto lib
   /* Required before calling other mosquitto functions */
@@ -179,8 +194,24 @@ int main(int argc, char *argv[])
    * This call makes the socket connection only, it does not complete the MQTT
    * CONNECT/CONNACK flow, you should use mosquitto_loop_start() or
    * mosquitto_loop_forever() for processing net traffic. */
+  
   int rc;
-  rc = mosquitto_connect(mosq, "127.0.0.1", 1883, 60);
+  char username[20];
+  char password[20];
+  Config_GetStr(&config, "user", username, sizeof(username));
+  Config_GetStr(&config, "pass", password, sizeof(password));
+  rc = mosquitto_username_pw_set(mosq, username, password);
+  if ( rc != MOSQ_ERR_SUCCESS ) {
+    mosquitto_destroy(mosq);
+    fprintf(stderr, "Error: %s\n", mosquitto_strerror(rc));
+    return 1;
+  }
+
+  char host[40];
+  int port;
+  Config_GetStr(&config, "host", &host, sizeof(host));
+  Config_GetInt(&config, "port", &port);
+  rc = mosquitto_connect(mosq, host, port, 60);
   if ( rc != MOSQ_ERR_SUCCESS ) {
     mosquitto_destroy(mosq);
     fprintf(stderr, "Error: %s\n", mosquitto_strerror(rc));
