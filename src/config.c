@@ -22,7 +22,7 @@ int Config_Load(Config* self, char* configFilename )
   fclose(f);
   if ( readCount >= sizeof(content) )
   {
-    fprintf("%s is to big.\r\n", configFilename);
+    fprintf(stderr, "%s is to big.\r\n", configFilename);
     return 1;
   }
 
