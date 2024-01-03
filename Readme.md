@@ -44,6 +44,10 @@ Run telldus-core-mqtt...
 sudo cmake --install build
 ```
 
+### Install cJson
+```bash
+sudo apt install libcjson-dev
+```
 ## Windows 11 / Visual Studio 2022
 ### Build/install mosquitto
 ```batch
@@ -67,7 +71,16 @@ http://download.telldus.com/TellStick/Software/TelldusCenter/TelldusCenter-2.1.2
 NOTE: Browser tricks needed nowadays to download non-https links!
 
 
-### Build telldus-core-mqtt
+## Install cJson
+https://vcpkg.io/en/getting-started.html
+```batch
+git clone https://github.com/Microsoft/vcpkg.git
+vcpkg\bootstrap-vcpkg.bat
+vcpkg install cJson
+vcpkg integrate install
+```
+
+# Build telldus-core-mqtt
 ```bash
 cd <telldus-core-mqtt>
 cmake -B build
@@ -79,3 +92,4 @@ Run telldus-core-mqtt...
 ```bash
 sudo cmake --install build
 ```
+

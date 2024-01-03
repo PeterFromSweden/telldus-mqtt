@@ -130,7 +130,7 @@ static void telldusSensorEvent(const char* protocol, const char* model, int id, 
     // No match
     strncpy(topic, telldusTopic, sizeof(topic));
   }
-  rc = mosquitto_publish(mosq, NULL, topic, strlen(payload), payload, 0, false);
+  rc = mosquitto_publish(mosq, NULL, topic, (int) strlen(payload), payload, 0, false);
   if ( rc != MOSQ_ERR_SUCCESS ) {
 
     fprintf(stderr, "Error publishing: %s\n", mosquitto_strerror(rc));
@@ -209,7 +209,7 @@ int main(int argc, char *argv[])
 
   char host[40];
   int port;
-  Config_GetStr(&config, "host", &host, sizeof(host));
+  Config_GetStr(&config, "host", host, sizeof(host));
   Config_GetInt(&config, "port", &port);
   rc = mosquitto_connect(mosq, host, port, 60);
   if ( rc != MOSQ_ERR_SUCCESS ) {

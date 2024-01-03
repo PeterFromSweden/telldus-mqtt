@@ -106,7 +106,7 @@ int Config_GetTopicTranslation(Config* self, const char* const telldusstring, ch
         {
           // printf("Matched %s with %s\r\n", telldusstring, find);
           // Copy the part before the substring to buffer
-          strncpy(oValue, telldusstring, substring - telldusstring, valueLen);
+          strncpy(oValue, telldusstring, substring - telldusstring);
           valueLen -= substring - telldusstring;
 
           // Null-terminate the buffer
