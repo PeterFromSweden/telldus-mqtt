@@ -22,7 +22,7 @@ int Config_Load(Config* self, char* configFilename )
   fclose(f);
   if ( readCount >= sizeof(content) || readCount < 1)
   {
-    fprintf(stderr, "%s has wrong size %i.\r\n", configFilename, readCount);
+    fprintf(stderr, "%s has wrong size %i.\r\n", configFilename, (int)readCount);
     return 1;
   }
 
