@@ -63,12 +63,12 @@ static int getInt(cJSON* cjson, const char* const property)
   return -1;
 }
 
-void Config_GetStr(Config* self, const char* const property, char* oValue, int valueLen)
+void Config_GetStr(Config* self, const char* const property, char* outputString, int outputLen)
 {
   char* strp = getStrp(self->configJson, property);
-  if ( strp != NULL && oValue != NULL )
+  if ( strp != NULL && outputString != NULL )
   {
-    strncpy(oValue, strp, valueLen);
+    strncpy(outputString, strp, outputLen);
   }
   else
   {
@@ -76,16 +76,22 @@ void Config_GetStr(Config* self, const char* const property, char* oValue, int v
   }
 }
 
-void Config_GetInt(Config* self, const char* const property, int* oValue)
+void Config_GetInt(Config* self, const char* const property, int* outputString)
 {
-  *oValue = getInt(self->configJson, property);
-  if ( *oValue == -1 )
+  *outputString = getInt(self->configJson, property);
+  if ( *outputString == -1 )
   {
     fprintf(stderr, "Property %s was not a found int\r\n", property);
   }
 }
 
-int Config_GetTopicTranslation(Config* self, const char* const telldusstring, char* oValue, int valueLen)
+int Config_GetTopicTranslation(
+  Config* self, 
+  const char* const inputKey,
+  const char* const inputString, 
+  const char* const outputKey,
+  char* outputString,
+  int outputLen)
 {
   cJSON* item = cJSON_GetObjectItem(self->configJson, "topic-translation");
   int rc = 1;
@@ -97,27 +103,27 @@ int Config_GetTopicTranslation(Config* self, const char* const telldusstring, ch
     while ( i < arrSize && rc == 1 )
     {
       cJSON* arrItem = cJSON_GetArrayItem(item, i);
-      char* find = getStrp(arrItem, "input");
-      char* replace = getStrp(arrItem, "output");
+      char* find = getStrp(arrItem, inputKey);
+      char* replace = getStrp(arrItem, outputKey);
       if ( find != NULL )
       {
-        char* substring = strstr(telldusstring, find);
-        if ( substring != NULL )
+        char* sub_string = strstr(inputString, find);
+        if ( sub_string != NULL )
         {
-          // printf("Matched %s with %s\r\n", telldusstring, find);
-          // Copy the part before the substring to buffer
-          strncpy(oValue, telldusstring, substring - telldusstring);
-          valueLen -= substring - telldusstring;
+          // printf("Matched %s with %s\r\n", inputString, find);
+          // Copy the part before the sub_string to buffer
+          strncpy(outputString, inputString, sub_string - inputString);
+          outputLen -= (int) (sub_string - inputString);
 
           // Null-terminate the buffer
-          oValue[substring - telldusstring] = '\0';
+          outputString[sub_string - inputString] = '\0';
 
-          // Concatenate the replacement substring
-          strncat(oValue, replace, valueLen);
-          valueLen -= strlen(replace);
+          // Concatenate the replacement sub_string
+          strncat(outputString, replace, outputLen);
+          outputLen -= (int) strlen(replace);
 
           // Concatenate the rest of the original string
-          strncat(oValue, substring + strlen(find), valueLen);
+          strncat(outputString, sub_string + strlen(find), outputLen);
 
           rc = 0;
 

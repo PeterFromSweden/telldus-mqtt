@@ -1,8 +1,11 @@
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include <mosquitto.h>
 #include <mqtt_protocol.h>
 #include <telldus-core.h>
+#include "criticalsection.h"
+#include "mythread.h"
 #include "config.h"
 
 static void telldusDeviceEvent(int deviceId, int method, const char* data, int callbackId, void* context);
@@ -23,6 +26,8 @@ static int evtRawDevice;
 static int evtController;
 static int evtSensor;
 
+static bool connected = false;
+static CriticalSection* criticalsectionPtr;
 
 /* Callback called when the client receives a CONNACK message from the broker. */
 static void on_connect(struct mosquitto* mosq, void* obj, int reason_code)
@@ -41,6 +46,7 @@ static void on_connect(struct mosquitto* mosq, void* obj, int reason_code)
 
   /* You may wish to set a flag here to indicate to your application that the
    * client is now connected. */
+  connected = true;
 }
 
 
@@ -52,6 +58,36 @@ static void on_connect(struct mosquitto* mosq, void* obj, int reason_code)
 static void on_publish(struct mosquitto* mosq, void* obj, int mid)
 {
   //printf("Message with mid %d has been published.\n", mid);
+}
+
+// Callback
+int on_message(struct mosquitto* mosq, void* userdata, const struct mosquitto_message* msg)
+{
+  printf("NYI: mqtt message %s %s (%d)\n", msg->topic, (const char*)msg->payload, msg->payloadlen);
+
+  char telldusTopic[70];
+  if ( Config_GetTopicTranslation(&config, "mqtt", msg->topic, "telldus", telldusTopic, sizeof(telldusTopic)) )
+  {
+    // No match
+    strncpy(telldusTopic, msg->topic, sizeof(telldusTopic));
+  }
+  
+  int rc;
+  if ( msg->payloadlen == 2 )
+  {
+    // on
+    rc = tdTurnOn(1);
+  }
+  else
+  {
+    // on
+    rc = tdTurnOff(1);
+  }
+  if ( rc != TELLSTICK_SUCCESS )
+  {
+    fprintf(stderr, "Turn on/off %s\r\n", tdGetErrorString(rc));
+  }
+  return 0;
 }
 
 
@@ -92,8 +128,12 @@ static void telldusRawDeviceEvent(const char* data, int controllerId, int callba
 static void telldusSensorEvent(const char* protocol, const char* model, int id, int dataType, const char* value, int timestamp, int callbackId, void* context) 
 {
   //printf("telldusSensorEvent %s, %s, %i, %i, %s, %i, %i\r\n", protocol, model, id, dataType, value, timestamp, callbackId);
+  if ( !connected )
+  {
+    printf("telldusSensorEvent but mqtt is not connected!\r\n");
+    return;
+  }
   char payload[20];
-  int temp;
   int rc;
 
 
@@ -125,11 +165,12 @@ static void telldusSensorEvent(const char* protocol, const char* model, int id, 
   char telldusTopic[70];
   snprintf(telldusTopic, sizeof(telldusTopic), "telldus/%s/%s/%i/%s", protocol, model, id, dataDypeStr);
   char topic[70];
-  if ( Config_GetTopicTranslation(&config, telldusTopic, topic, sizeof(topic)) )
+  if ( Config_GetTopicTranslation(&config, "telldus", telldusTopic, "mqtt", topic, sizeof(topic)) )
   {
     // No match
     strncpy(topic, telldusTopic, sizeof(topic));
   }
+  CriticalSection_Enter(criticalsectionPtr);
   rc = mosquitto_publish(mosq, NULL, topic, (int) strlen(payload), payload, 0, false);
   if ( rc != MOSQ_ERR_SUCCESS ) {
 
@@ -139,6 +180,7 @@ static void telldusSensorEvent(const char* protocol, const char* model, int id, 
   {
     //printf("Published %s = '%s'\r\n", topic, payload);
   }
+  CriticalSection_Leave(criticalsectionPtr);
 }
 
 static void telldusControllerEvent(int controllerId, int changeEvent, int changeType, const char* newValue, int callbackId, void* context)
@@ -150,6 +192,8 @@ static void telldusControllerEvent(int controllerId, int changeEvent, int change
 int main(int argc, char *argv[])
 {
   printf("main\r\n");
+
+  criticalsectionPtr = CriticalSection_Create();
   
   Config_Init(&config);
   Config_Load(&config, "telldus-core-mqtt.json");
@@ -170,9 +214,11 @@ int main(int argc, char *argv[])
 
   // Mosquitto lib
   /* Required before calling other mosquitto functions */
+  CriticalSection_Enter(criticalsectionPtr);
   mosquitto_lib_init();
   int major, minor, revision;
   mosquitto_lib_version(&major, &minor, &revision);
+  CriticalSection_Leave(criticalsectionPtr);
   printf("mosquitto version %d.%d.%d\r\n", major, minor, revision);
 
   /* Create a new client instance.
@@ -180,51 +226,69 @@ int main(int argc, char *argv[])
    * clean session = true -> the broker should remove old sessions when we connect
    * obj = NULL -> we aren't passing any of our private data for callbacks
    */
+  CriticalSection_Enter(criticalsectionPtr);
   mosq = mosquitto_new(serial, true, NULL);
   if ( mosq == NULL ) {
     fprintf(stderr, "Error: Out of memory.\n");
     return 1;
   }
+  CriticalSection_Leave(criticalsectionPtr);
 
   /* Configure callbacks. This should be done before connecting ideally. */
+  CriticalSection_Enter(criticalsectionPtr);
   mosquitto_connect_callback_set(mosq, on_connect);
   mosquitto_publish_callback_set(mosq, on_publish);
+  mosquitto_message_callback_set(mosq, on_message);
+  CriticalSection_Leave(criticalsectionPtr);
 
   /* Connect to test.mosquitto.org on port 1883, with a keepalive of 60 seconds.
    * This call makes the socket connection only, it does not complete the MQTT
    * CONNECT/CONNACK flow, you should use mosquitto_loop_start() or
    * mosquitto_loop_forever() for processing net traffic. */
   
-  int rc;
   char username[20];
   char password[20];
   Config_GetStr(&config, "user", username, sizeof(username));
   Config_GetStr(&config, "pass", password, sizeof(password));
-  rc = mosquitto_username_pw_set(mosq, username, password);
+  CriticalSection_Enter(criticalsectionPtr);
+  int rc = mosquitto_username_pw_set(mosq, username, password);
   if ( rc != MOSQ_ERR_SUCCESS ) {
     mosquitto_destroy(mosq);
     fprintf(stderr, "Error: %s\n", mosquitto_strerror(rc));
+    CriticalSection_Leave(criticalsectionPtr);
     return 1;
   }
+  CriticalSection_Leave(criticalsectionPtr);
 
   char host[40];
   int port;
   Config_GetStr(&config, "host", host, sizeof(host));
   Config_GetInt(&config, "port", &port);
+  CriticalSection_Enter(criticalsectionPtr);
   rc = mosquitto_connect(mosq, host, port, 60);
+  if ( rc == MOSQ_ERR_ERRNO )
+  {
+    printf("Is %s:%i a MQTT broker?\r\n", host, port);
+  }
   if ( rc != MOSQ_ERR_SUCCESS ) {
     mosquitto_destroy(mosq);
     fprintf(stderr, "Error: %s\n", mosquitto_strerror(rc));
+    CriticalSection_Leave(criticalsectionPtr);
     return 1;
   }
+  CriticalSection_Leave(criticalsectionPtr);
 
   /* Run the network loop in a background thread, this call returns quickly. */
+  //rc = mosquitto_loop_forever(mosq, -1, 1);
+  CriticalSection_Enter(criticalsectionPtr);
   rc = mosquitto_loop_start(mosq);
-  if ( 0 && rc != MOSQ_ERR_SUCCESS ) {
+  if ( rc != MOSQ_ERR_SUCCESS ) {
     mosquitto_destroy(mosq);
     fprintf(stderr, "Error: %s\n", mosquitto_strerror(rc));
+    CriticalSection_Leave(criticalsectionPtr);
     return 1;
   }
+  CriticalSection_Leave(criticalsectionPtr);
 
 
   /* At this point the client is connected to the network socket, but may not
@@ -234,14 +298,44 @@ int main(int argc, char *argv[])
  * the connect callback.
  * In this case we know it is 1 second before we start publishing.
  */
+  while ( !connected )
+  {
+    MyThread_Sleep(100);
+  }
+  CriticalSection_Enter(criticalsectionPtr);
+  mosquitto_subscribe(mosq, NULL, "telldus/device/#", 0); // Always listen for unconfigured telldus topics
+  mosquitto_subscribe(mosq, NULL, "house/cristmastree", 0);
+  /*
+  for ( int i = 1; i < 10; i++ )
+  {
+    char telldusTopic[70];
+    char mqttTopic[70];
+    snprintf(telldusTopic, sizeof(telldusTopic), "telldus/device/%i", i);
+    if ( !Config_GetTopicTranslation(&config, "telldus", telldusTopic, "mqtt", mqttTopic, sizeof(mqttTopic) - 1) )
+    {
+      // strcat(mqttTopic, "/#");
+      mosquitto_subscribe(mosq, NULL, mqttTopic, 0);
+      printf("Subscribing to %s\r\n", mqttTopic);
+    }
+  }
+  */
+  CriticalSection_Leave(criticalsectionPtr);
+
   while ( 1 )
   {
     // Events!
     //publish_sensor_data(mosq);
-
+    CriticalSection_Enter(criticalsectionPtr);
+    //mosquitto_loop(mosq, -1, 1);
+    CriticalSection_Leave(criticalsectionPtr);
+    
+    Sleep(100);
   }
 
+  CriticalSection_Enter(criticalsectionPtr);
   mosquitto_lib_cleanup();
+  CriticalSection_Leave(criticalsectionPtr);
+  CriticalSection_Destroy(criticalsectionPtr);
 
   return 0;
 }

@@ -48,37 +48,51 @@ sudo cmake --install build
 ```bash
 sudo apt install libcjson-dev
 ```
+
 ## Windows 11 / Visual Studio 2022
-### Build/install mosquitto
+### Install vcpkg
+https://vcpkg.io/en/getting-started.html
 ```batch
-choco install openssl
-git clone https://github.com/eclipse/mosquitto.git
-cd mosquitto
-cmake -B build -DWITH_THREADING=OFF
-cmake --build build
-```
-As admin
-```batch
-cmake --install build --config Debug
+git clone https://github.com/Microsoft/vcpkg.git
+vcpkg\bootstrap-vcpkg.bat
 ```
 
+### Install mosquitto prerequsity cJson
+```batch
+vcpkg install cJson
+vcpkg integrate install
+```
+
+### Install mosquitto prerequsity pthreads
+```batch
+vcpkg install pthreads
+vcpkg integrate install
+```
+
+### Install mosquitto prerequsity openssl
+choco install openssl
+
+### Build/install mosquitto
+```batch
+git clone https://github.com/eclipse/mosquitto.git
+```
+Open *folder* mosquitto in Visual Studio  
+Edit CMakeLists.txt:70
+```
+	#find_package(Threads REQUIRED)
+	set (PTHREAD_LIBRARIES "C:/Users/Peter/Downloads/vcpkg/packages/pthreads_x64-windows/lib/pthreadVC3.lib")
+	set (PTHREAD_INCLUDE_DIR "C:/Users/Peter/Downloads/vcpkg/packages/pthreads_x64-windows/include")
+```
+In visual studio build and install
+
 Install locations  
-+ C:\Program files(x86)\mosquitto
++ mosquitto/out/install
 
 ### Install telldus
 TelldusCenter-2.1.2.exe 
 http://download.telldus.com/TellStick/Software/TelldusCenter/TelldusCenter-2.1.2.exe  
 NOTE: Browser tricks needed nowadays to download non-https links!
 
-
-## Install cJson
-https://vcpkg.io/en/getting-started.html
-```batch
-git clone https://github.com/Microsoft/vcpkg.git
-vcpkg\bootstrap-vcpkg.bat
-vcpkg install cJson
-vcpkg integrate install
-```
 
 # Build telldus-core-mqtt
 ```bash

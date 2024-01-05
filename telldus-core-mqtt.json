@@ -6,24 +6,33 @@
   "filter-non-transled": "yes",
   "topic-translation": [
     {
-      "input": "telldus/fineoffset/temperaturehumidity/167",
-      "output": "Hall"
+      "telldus": "telldus/fineoffset/temperaturehumidity/167",
+      "mqtt": "house/hall"
     },
     {
-      "input": "telldus/fineoffset/temperaturehumidity/183",
-      "output": "Kitchen"
+      "telldus": "telldus/fineoffset/temperaturehumidity/183",
+      "mqtt": "house/kitchen"
     },
     {
-      "input": "telldus/fineoffset/temperaturehumidity/231",
-      "output": "Laundry"
+      "telldus": "telldus/fineoffset/temperaturehumidity/231",
+      "mqtt": "house/laundry"
     },
     {
-      "input": "telldus/mandolyn/temperaturehumidity/11",
-      "output": "Shed"
+      "telldus": "telldus/mandolyn/temperaturehumidity/11",
+      "mqtt": "house/shed"
     },
     {
-      "input": "telldus/oregon/1A2D/227",
-      "output": "Neighbor"
+      "telldus": "telldus/oregon/1A2D/227",
+      "mqtt": "house/neighbor"
+    },
+    {
+      "telldus": "telldus/device/1",
+      "mqtt": "house/example"
+    },
+    {
+      "telldus": "telldus/device/2",
+      "mqtt": "house/christmastree"
     }
+
   ]
 }
