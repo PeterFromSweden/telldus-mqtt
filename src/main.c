@@ -329,7 +329,7 @@ int main(int argc, char *argv[])
     //mosquitto_loop(mosq, -1, 1);
     CriticalSection_Leave(criticalsectionPtr);
     
-    Sleep(100);
+    MyThread_Sleep(100);
   }
 
   CriticalSection_Enter(criticalsectionPtr);
