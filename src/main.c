@@ -61,7 +61,7 @@ static void on_publish(struct mosquitto* mosq, void* obj, int mid)
 }
 
 // Callback
-int on_message(struct mosquitto* mosq, void* userdata, const struct mosquitto_message* msg)
+void on_message(struct mosquitto* mosq, void* userdata, const struct mosquitto_message* msg)
 {
   printf("NYI: mqtt message %s %s (%d)\n", msg->topic, (const char*)msg->payload, msg->payloadlen);
 
@@ -87,7 +87,6 @@ int on_message(struct mosquitto* mosq, void* userdata, const struct mosquitto_me
   {
     fprintf(stderr, "Turn on/off %s\r\n", tdGetErrorString(rc));
   }
-  return 0;
 }
 
 
