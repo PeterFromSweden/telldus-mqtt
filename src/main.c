@@ -109,6 +109,29 @@ static int getTelldusController(void)
   return available;
 }
 
+static void getTelldusDevices(void)
+{
+  int nrDev = tdGetNumberOfDevices();
+  for ( int i = 0; i < nrDev; i++ )
+  {
+    printf("Device %i\r\n", i);
+    printf("\tid = %i\r\n", tdGetDeviceId(i));
+    printf("\ttype = %i\r\n", tdGetDeviceType(i));
+    printf("\tname = %s\r\n", tdGetName(i));
+    printf("\tprotocol = %s\r\n", tdGetProtocol(i));
+    printf("\tmodel = %s\r\n", tdGetModel(i));
+
+    const char *names[] = { "code", "fade", "house", "model", "name", "protocol", "state", "stateValue", "system", "unit", "units", ""};
+    int j = 0;
+    while ( *names[j] )
+    {
+      printf("\t%s=%s\r\n", names[j], tdGetDeviceParameter(i, names[j], "---"));
+      j++;
+    }
+    //char* WINAPI tdGetDeviceParameter(int intDeviceId, const char* strName, const char* defaultValue);
+  }
+}
+
 static void telldusDeviceEvent(int deviceId, int method, const char* data, int callbackId, void* context)
 {
   printf("NYI:telldusDeviceEvent %i, %i, %s, %i\r\n", deviceId, method, data, callbackId);
@@ -205,6 +228,8 @@ int main(int argc, char *argv[])
     fprintf(stderr, "Error: No connected telldus device?!?\r\n");
     return 1;
   }
+
+  getTelldusDevices();
 
   evtController = tdRegisterControllerEvent(&telldusControllerEvent, NULL);
   evtSensor = tdRegisterSensorEvent(&telldusSensorEvent, NULL);
@@ -304,7 +329,7 @@ int main(int argc, char *argv[])
   }
   CriticalSection_Enter(criticalsectionPtr);
   mosquitto_subscribe(mosq, NULL, "telldus/device/#", 0); // Always listen for unconfigured telldus topics
-  mosquitto_subscribe(mosq, NULL, "house/cristmastree", 0);
+  mosquitto_subscribe(mosq, NULL, "house/christmastree", 0);
   /*
   for ( int i = 1; i < 10; i++ )
   {
