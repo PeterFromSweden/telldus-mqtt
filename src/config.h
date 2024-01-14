@@ -7,10 +7,11 @@ typedef struct {
   cJSON* configJson;
 } Config;
 
-void Config_Init(Config* self);
+Config* Config_GetInstance(void);
 int Config_Load(Config* self, char* configFilename);
+char* Config_GetStrPtr(Config* self, const char* const property);
+int Config_GetInt(Config* self, const char* const property);
 void Config_GetStr(Config* self, const char* const property, char* oValue, int valueLen);
-void Config_GetInt(Config* self, const char* const property, int* oValue);
 int Config_GetTopicTranslation(
   Config* self,
   const char* const inputKey,

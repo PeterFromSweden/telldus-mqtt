@@ -1,11 +1,23 @@
 #include <stdio.h>
+#include <errno.h>
 #include <string.h>
+#include <stdbool.h>
+#include "log.h"
 #include "config.h"
 
-void Config_Init(Config* self)
+static Config theConfig;
+bool created;
+
+Config* Config_GetInstance(void)
 {
-  *self = (Config){ 0 };
-  printf("cJson %s\r\n", cJSON_Version());
+  Config* self = &theConfig;
+  if( created == false )
+  {
+    *self = (Config){ 0 };
+    Log(TM_LOG_DEBUG, "cJson %s", cJSON_Version());
+    created = true;
+  }
+  return self;
 }
 
 int Config_Load(Config* self, char* configFilename )
@@ -13,7 +25,7 @@ int Config_Load(Config* self, char* configFilename )
   FILE* f = fopen(configFilename, "rt");
   if ( !f )
   {
-    perror(configFilename);
+    Log(TM_LOG_ERROR, "%s %s", configFilename, strerror(errno));
     return 1;
   }
 
@@ -22,7 +34,7 @@ int Config_Load(Config* self, char* configFilename )
   fclose(f);
   if ( readCount >= sizeof(content) || readCount < 1)
   {
-    fprintf(stderr, "%s has wrong size %i.\r\n", configFilename, (int)readCount);
+    Log(TM_LOG_ERROR, "%s has wrong size %i.", configFilename, (int)readCount);
     return 1;
   }
 
@@ -32,7 +44,7 @@ int Config_Load(Config* self, char* configFilename )
     const char* error_ptr = cJSON_GetErrorPtr();
     if ( error_ptr != NULL )
     {
-      fprintf(stderr, "Error before: %s\n", error_ptr);
+      Log(TM_LOG_ERROR, "Error before: %s\n", error_ptr);
     }
     
     return 1;
@@ -43,9 +55,9 @@ int Config_Load(Config* self, char* configFilename )
   return 0;
 }
 
-static char* getStrp(cJSON* cjson, const char* const property)
+char* Config_GetStrPtr(Config* self, const char* const property)
 {
-  cJSON* item = cJSON_GetObjectItem(cjson, property);
+  cJSON* item = cJSON_GetObjectItem(self->configJson, property);
   if ( cJSON_IsString(item) )
   {
     return item->valuestring;
@@ -53,9 +65,9 @@ static char* getStrp(cJSON* cjson, const char* const property)
   return NULL;
 }
 
-static int getInt(cJSON* cjson, const char* const property)
+int Config_GetInt(Config* self, const char* const property)
 {
-  cJSON* item = cJSON_GetObjectItem(cjson, property);
+  cJSON* item = cJSON_GetObjectItem(self->configJson, property);
   if ( cJSON_IsNumber(item) )
   {
     return item->valueint;
@@ -65,23 +77,14 @@ static int getInt(cJSON* cjson, const char* const property)
 
 void Config_GetStr(Config* self, const char* const property, char* outputString, int outputLen)
 {
-  char* strp = getStrp(self->configJson, property);
+  char* strp = Config_GetStrPtr(self, property);
   if ( strp != NULL && outputString != NULL )
   {
     strncpy(outputString, strp, outputLen);
   }
   else
   {
-    fprintf(stderr, "Property %s was not a found string\r\n", property);
-  }
-}
-
-void Config_GetInt(Config* self, const char* const property, int* outputString)
-{
-  *outputString = getInt(self->configJson, property);
-  if ( *outputString == -1 )
-  {
-    fprintf(stderr, "Property %s was not a found int\r\n", property);
+    Log(TM_LOG_ERROR, "Property %s was not a found string", property);
   }
 }
 
@@ -103,8 +106,8 @@ int Config_GetTopicTranslation(
     while ( i < arrSize && rc == 1 )
     {
       cJSON* arrItem = cJSON_GetArrayItem(item, i);
-      char* find = getStrp(arrItem, inputKey);
-      char* replace = getStrp(arrItem, outputKey);
+      char* find = Config_GetStrPtr((Config*)arrItem, inputKey);
+      char* replace = Config_GetStrPtr((Config*)arrItem, outputKey);
       if ( find != NULL )
       {
         char* sub_string = strstr(inputString, find);
@@ -134,7 +137,7 @@ int Config_GetTopicTranslation(
   }
   else
   {
-    fprintf(stderr, "Property topic-translation was not a found array\r\n");
+   Log(TM_LOG_ERROR, "Property topic-translation was not a found array");
   }
   return rc;
 }
