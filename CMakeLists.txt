@@ -10,7 +10,15 @@ find_package(TELLDUS_CORE REQUIRED)
 find_package(cJSON REQUIRED)
 
 add_executable( ${PROJECT_NAME}
-  "src/main.c"  "src/config.c" "src/config.h" "src/criticalsection.h" "src/criticalsection_stub.c" )
+  "src/main.c"  
+  "src/telldusclient.c" 
+  "src/config.c" 
+  "src/log.c"
+  "src/myconsole.c"
+  "src/criticalsection_stub.c"
+  "src/telldussensor.c"
+  "src/mqttclient.c" 
+)
 
 target_include_directories( ${PROJECT_NAME} PRIVATE ${MOSQUITTO_INCLUDE_DIRS} ${TELLDUS_CORE_INCLUDE_DIRS} ${CJSON_INCLUDE_DIRS})
 target_link_libraries( ${PROJECT_NAME} ${MOSQUITTO_LIBRARIES} ${TELLDUS_CORE_LIBRARIES}  ${CJSON_LIBRARIES})
@@ -20,7 +28,10 @@ file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/telldus-core-mqtt.json DESTINATION ${CMAKE
 install( TARGETS ${PROJECT_NAME} )
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-  target_sources( ${PROJECT_NAME} PRIVATE "src/mythread_linux.c")
+  target_sources( ${PROJECT_NAME} PRIVATE 
+    "src/mythread_linux.c"
+    "src/mysyslog_linux.c"
+  )
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   target_sources( ${PROJECT_NAME} PRIVATE "src/mythread_win.c")
 else()
