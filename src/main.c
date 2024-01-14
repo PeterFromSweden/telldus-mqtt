@@ -12,8 +12,8 @@
 
 
 static Config* config;
-static TelldusClient telldusclient;
-static MqttClient mqttclient;
+static TelldusClient* telldusclient;
+static MqttClient* mqttclient;
 
 static struct mosquitto* mosq;
 
@@ -38,19 +38,21 @@ int main(int argc, char *argv[])
   config = Config_GetInstance();
   Config_Load(config, "telldus-core-mqtt.json");
 
-  TelldusClient_Init(&telldusclient);
-  MqttClient_Init(&mqttclient);
+  telldusclient = TelldusClient_GetInstance();
 
   while(1)
   {
-    if( !TelldusClient_IsConnected(&telldusclient) )
+    if( !TelldusClient_IsConnected(telldusclient) )
     {
-      TelldusClient_Connect(&telldusclient);
+      TelldusClient_Connect(telldusclient);
     }
-    
-    if( !MqttClient_IsConnected(&mqttclient) )
+    else
     {
-      MqttClient_Connect(&mqttclient);
+      mqttclient = MqttClient_GetInstance();
+      if( !MqttClient_IsConnected(mqttclient) )
+      {
+        MqttClient_Connect(mqttclient);
+      }
     }
     
     MyThread_Sleep(1000);

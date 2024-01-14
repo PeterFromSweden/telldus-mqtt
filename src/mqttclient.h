@@ -10,6 +10,7 @@ typedef enum {
   TM_MQCONN_START,
   TM_MQCONN_OK
 } TMqConn;
+
 typedef struct
 {
   struct mosquitto* mosq;
@@ -18,7 +19,7 @@ typedef struct
   bool mutelog;
 } MqttClient;
 
-void MqttClient_Init(MqttClient* self);
+MqttClient* MqttClient_GetInstance(void);
 void MqttClient_Destroy(MqttClient* self);
 bool MqttClient_IsConnected(MqttClient *self);
 int MqttClient_Connect(MqttClient *self);

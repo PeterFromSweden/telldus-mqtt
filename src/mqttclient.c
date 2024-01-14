@@ -1,34 +1,46 @@
+#include <string.h>
 #include <stdlib.h>
 #include "log.h"
 #include "telldusclient.h"
 #include "config.h"
+#include "configjson.h"
 #include "mqttclient.h"
+
+static MqttClient themqttclient;
+static bool created;
 
 static void on_connect(struct mosquitto* mosq, void* obj, int reason_code);
 static void on_publish(struct mosquitto* mosq, void* obj, int mid);
 void on_message(struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg);
 
-void MqttClient_Init(MqttClient* self)
+MqttClient* MqttClient_GetInstance(void)
 {
-  *self = (MqttClient) {0};
-  
-  // Init mosq
-  int major, minor, revision;
-  mosquitto_lib_init();
-  mosquitto_lib_version(&major, &minor, &revision);
-  Log(TM_LOG_INFO, "Mosquitto %i.%i.%i", major, minor, revision);
-
-  self->mosq = mosquitto_new(NULL /*serial*/, true, (void*) self);
-  if ( self->mosq == NULL ) 
+  MqttClient* self = &themqttclient;
+  if( created == false )
   {
-    Log(TM_LOG_ERROR, "Error: Out of memory.");
-    exit(1);
-  }
-  mosquitto_connect_callback_set(self->mosq, on_connect);
-  mosquitto_publish_callback_set(self->mosq, on_publish);
-  mosquitto_message_callback_set(self->mosq, on_message);
+    *self = (MqttClient) {0};
+    
+    // Init mosq
+    int major, minor, revision;
+    mosquitto_lib_init();
+    mosquitto_lib_version(&major, &minor, &revision);
+    Log(TM_LOG_INFO, "Mosquitto %i.%i.%i", major, minor, revision);
 
-  self->config = Config_GetInstance();
+    char* serial = TelldusClient_GetControllerSerial(TelldusClient_GetInstance());
+    self->mosq = mosquitto_new(serial, true, (void*) self);
+    if ( self->mosq == NULL ) 
+    {
+      Log(TM_LOG_ERROR, "Error: Out of memory.");
+      exit(1);
+    }
+    mosquitto_connect_callback_set(self->mosq, on_connect);
+    mosquitto_publish_callback_set(self->mosq, on_publish);
+    mosquitto_message_callback_set(self->mosq, on_message);
+
+    self->config = Config_GetInstance();
+    created = true;
+  }
+  return self;
 }
 
 void MqttClient_Destroy(MqttClient* self)
@@ -98,9 +110,76 @@ void MqttClient_Disconnect(MqttClient *self)
   self->mqconn = TM_MQCONN_NONE;
 }
 
+void replaceWords(char *buffer, const char *find, const char *replace) {
+    char *pos = buffer;
+    int findLen = strlen(find);
+    int replaceLen = strlen(replace);
+
+    while ((pos = strstr(pos, find)) != NULL) {
+        memmove(pos + replaceLen, pos + findLen, strlen(pos + findLen) + 1);
+        memcpy(pos, replace, replaceLen);
+        pos += replaceLen;
+    }
+}
+
+static void json_keywordexpansion(TelldusSensor* sensor, char* sernoPtr, char* buf)
+{
+  const char* wordsToReplace[] = {
+    "{datatype}", "{unit}", "{serno}", "{protocol}", "{model}", "{id}", ""
+  };
+  char* replacement[] = {
+    TelldusSensor_ItemToString(sensor, TM_SENSOR_CONTENT_DATATYPE),
+    TelldusSensor_ItemToString(sensor, TM_SENSOR_CONTENT_UNIT),
+    sernoPtr,
+    TelldusSensor_ItemToString(sensor, TM_SENSOR_CONTENT_PROTOCOL),
+    TelldusSensor_ItemToString(sensor, TM_SENSOR_CONTENT_MODEL),
+    TelldusSensor_ItemToString(sensor, TM_SENSOR_CONTENT_ID)
+  };
+  int i = 0;
+  while( *wordsToReplace[i] )
+  {
+    replaceWords(buf, wordsToReplace[i], replacement[i]);
+    i++;
+  }
+}
+
 void MqttClient_AddSensor(MqttClient* self, TelldusSensor* sensor)
 {
+  char str[40];
+  char* sernoPtr = TelldusClient_GetControllerSerial(TelldusClient_GetInstance());
 
+  Log(TM_LOG_DEBUG, "AddSensor %s %s", 
+    sernoPtr,
+    TelldusSensor_ToString(sensor, str, sizeof(str))
+  );
+
+  ConfigJson cj;
+  ConfigJson_Init(&cj);
+  ConfigJson_LoadContent(&cj, "telldus-sensor.json");
+  json_keywordexpansion(sensor, sernoPtr, ConfigJson_GetContent(&cj));
+  // Check for errors.  
+  ConfigJson_ParseContent(&cj);
+  
+  ConfigJson cjTopic;
+  ConfigJson_Init(&cjTopic);
+  ConfigJson_LoadContent(&cjTopic, "homeassistant-sensor.json");
+  json_keywordexpansion(sensor, sernoPtr, ConfigJson_GetContent(&cjTopic));
+  // Check for errors.  
+  ConfigJson_ParseContent(&cjTopic);
+  
+  char* payload = ConfigJson_GetContent(&cj);
+  mosquitto_publish(
+    self->mosq, 
+    NULL, 
+    ConfigJson_GetStrPtr(&cjTopic, "topic"), 
+    strlen(payload), 
+    payload, 
+    0, // qos
+    true //retain
+  );
+  
+  ConfigJson_Destroy(&cj);
+  ConfigJson_Destroy(&cjTopic);
 }
 
 

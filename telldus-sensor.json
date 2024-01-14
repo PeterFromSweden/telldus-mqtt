@@ -1,0 +1,20 @@
+{
+    "device_class": "{datatype}",
+    "unit_of_measurement": "{unit}",
+    "state_topic": "telldus/{serno}/sensor/{protocol}_{model}_{id}/{datatype}",
+    "unique_id": "telldus/{serno}/sensor/{protocol}_{model}_{id}/{datatype}",
+    "device": {
+        "manufacturer": "Telldus",
+        "identifiers": [
+            "{serno}-{protocol}-{model}-{id}-{datatype}"
+        ],
+        "name": "{serno}-{protocol}-{model}-{id}-{datatype}"
+    },
+    "availability": {
+        "topic": "telldus/{serno}/sensor/{protocol}_{model}_{id}/status"
+    },
+    "origin": {
+        "name": "telldus-mqtt",
+        "sw_version": "0.1.3"
+    }
+}
