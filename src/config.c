@@ -6,7 +6,7 @@
 #include "config.h"
 
 static Config theConfig;
-bool created;
+static bool created;
 
 Config* Config_GetInstance(void)
 {
@@ -14,7 +14,7 @@ Config* Config_GetInstance(void)
   if( created == false )
   {
     *self = (Config){ 0 };
-    Log(TM_LOG_DEBUG, "cJson %s", cJSON_Version());
+    ConfigJson_Init(&self->configJson);
     created = true;
   }
   return self;
@@ -22,57 +22,20 @@ Config* Config_GetInstance(void)
 
 int Config_Load(Config* self, char* configFilename )
 {
-  FILE* f = fopen(configFilename, "rt");
-  if ( !f )
-  {
-    Log(TM_LOG_ERROR, "%s %s", configFilename, strerror(errno));
-    return 1;
-  }
-
-  char content[2048];
-  size_t readCount = fread(content, 1, sizeof(content), f);
-  fclose(f);
-  if ( readCount >= sizeof(content) || readCount < 1)
-  {
-    Log(TM_LOG_ERROR, "%s has wrong size %i.", configFilename, (int)readCount);
-    return 1;
-  }
-
-  self->configJson = cJSON_Parse(content);
-  if ( self->configJson == NULL )
-  {
-    const char* error_ptr = cJSON_GetErrorPtr();
-    if ( error_ptr != NULL )
-    {
-      Log(TM_LOG_ERROR, "Error before: %s\n", error_ptr);
-    }
-    
-    return 1;
-  }
-
-  cJSON_Print(self->configJson);
-
+  ConfigJson_LoadContent( &self->configJson, configFilename );
+  ConfigJson_ParseContent( &self->configJson );
+  ConfigJson_FreeContent( &self->configJson );
   return 0;
 }
 
 char* Config_GetStrPtr(Config* self, const char* const property)
 {
-  cJSON* item = cJSON_GetObjectItem(self->configJson, property);
-  if ( cJSON_IsString(item) )
-  {
-    return item->valuestring;
-  }
-  return NULL;
+  return ConfigJson_GetStrPtr(&self->configJson, property);
 }
 
 int Config_GetInt(Config* self, const char* const property)
 {
-  cJSON* item = cJSON_GetObjectItem(self->configJson, property);
-  if ( cJSON_IsNumber(item) )
-  {
-    return item->valueint;
-  }
-  return -1;
+  return ConfigJson_GetInt( &self->configJson, property );
 }
 
 void Config_GetStr(Config* self, const char* const property, char* outputString, int outputLen)
@@ -96,7 +59,7 @@ int Config_GetTopicTranslation(
   char* outputString,
   int outputLen)
 {
-  cJSON* item = cJSON_GetObjectItem(self->configJson, "topic-translation");
+  cJSON* item = cJSON_GetObjectItem(self->configJson.json, "topic-translation");
   int rc = 1;
 
   if ( cJSON_IsArray(item) )

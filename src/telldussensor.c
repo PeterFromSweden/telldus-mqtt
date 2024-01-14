@@ -3,6 +3,7 @@
 #include <string.h>
 #include <telldus-core.h>
 #include "log.h"
+#include "mqttclient.h"
 #include "telldussensor.h"
 
 
@@ -15,13 +16,18 @@ struct SensorNodeS {
 
 SensorNode* sensors;
 
-char* TelldusSensor_ToString(TelldusSensor* self, char* strp, int len);
+static char* TelldusSensor_DataTypeToString(int dataType);
+static char* TelldusSensor_DataTypeToUnit(int dataType);
 
 TelldusSensor* TelldusSensor_Create(const char *protocol, const char *model, int id, int dataType, const char *value, int timestamp)
 {
   SensorNode* sensorNode = sensors;
   SensorNode* lastSensorPtr;
   char str[80];
+  char idStr[10];
+  char dataTypeStr[20];
+  sprintf(idStr, "%i", id);
+  strcpy(dataTypeStr, TelldusSensor_DataTypeToString(dataType));
   
   // Find existing sensor
   while ( sensorNode != NULL )
@@ -29,8 +35,8 @@ TelldusSensor* TelldusSensor_Create(const char *protocol, const char *model, int
     TelldusSensor* sensor = &sensorNode->sensor;
     if( strcmp(sensor->protocol, protocol) == 0 && 
         strcmp(sensor->model, model) == 0 &&
-        sensor->id == id &&
-        sensor->dataType == dataType )
+        strcmp(sensor->id, idStr) == 0 &&
+        strcmp(sensor->dataType, dataTypeStr) == 0 )
     {
       Log(TM_LOG_DEBUG, "Sensor %s", TelldusSensor_ToString(&sensorNode->sensor, str, sizeof(str)));
       return sensor;
@@ -39,7 +45,7 @@ TelldusSensor* TelldusSensor_Create(const char *protocol, const char *model, int
     sensorNode = sensorNode->next;
   }
   
-  // New sensor
+  // New sensor node, link into list
   SensorNode* newSensorListNode = calloc( 1, sizeof(SensorNode) );
   if( sensors == NULL )
   {
@@ -50,13 +56,18 @@ TelldusSensor* TelldusSensor_Create(const char *protocol, const char *model, int
     lastSensorPtr->next = newSensorListNode;
   }
 
-  strcpy(newSensorListNode->sensor.protocol, protocol);
-  strcpy(newSensorListNode->sensor.model, model);
-  newSensorListNode->sensor.id = id;
-  newSensorListNode->sensor.dataType = dataType;
-  Log(TM_LOG_DEBUG, "New sensor %s", TelldusSensor_ToString(&newSensorListNode->sensor, str, sizeof(str)));
-
-  return &newSensorListNode->sensor;
+  // Initialize sensor
+  TelldusSensor* sensor = &newSensorListNode->sensor;
+  strcpy(sensor->protocol, protocol);
+  strcpy(sensor->model, model);
+  strcpy(sensor->id, idStr);
+  strcpy(sensor->dataType, dataTypeStr);
+  strcpy(sensor->unit, TelldusSensor_DataTypeToUnit(dataType));
+  Log(TM_LOG_DEBUG, "New sensor %s", TelldusSensor_ToString(sensor, str, sizeof(str)));
+  
+  MqttClient_AddSensor(MqttClient_GetInstance(), sensor);
+  
+  return sensor;
 }
 
 char* TelldusSensor_DataTypeToString(int dataType)
@@ -73,15 +84,46 @@ char* TelldusSensor_DataTypeToString(int dataType)
   default:                      return "-----";
   }
 }
+
+char* TelldusSensor_DataTypeToUnit(int dataType)
+{
+  switch (dataType)
+  {
+  case TELLSTICK_TEMPERATURE:   return "°C";
+  case TELLSTICK_HUMIDITY:      return "%";
+  case TELLSTICK_RAINRATE:      return "";
+  case TELLSTICK_RAINTOTAL:     return "";
+  case TELLSTICK_WINDDIRECTION: return "";
+  case TELLSTICK_WINDAVERAGE:   return "";
+  case TELLSTICK_WINDGUST:      return "";
+  default:                      return "?";
+  }
+}
+
 char* TelldusSensor_ToString(TelldusSensor* self, char* strp, int len)
 {
-  snprintf(strp, len, "%s-%s-%i-%s",
+  snprintf(strp, len, "%s-%s-%s-%s",
     self->protocol,
     self->model,
     self->id,
-    TelldusSensor_DataTypeToString(self->dataType)
+    self->dataType
   );
   return strp;
+}
+
+char* TelldusSensor_ItemToString(TelldusSensor* self, TSensorContent content)
+{
+  char* ret = NULL;
+
+  switch (content)
+  {
+  case TM_SENSOR_CONTENT_DATATYPE: return self->dataType;
+  case TM_SENSOR_CONTENT_UNIT: return self->unit;
+  case TM_SENSOR_CONTENT_PROTOCOL: return self->protocol;
+  case TM_SENSOR_CONTENT_MODEL: return self->model;
+  case TM_SENSOR_CONTENT_ID: return self->id;
+  default: return "UKNOWN";
+  }
 }
 
 void TelldusSensor_OnEvent(const char *protocol, const char *model, int id, int dataType, const char *value, int timestamp, int callbackId, void *context)

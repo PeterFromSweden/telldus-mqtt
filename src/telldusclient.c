@@ -6,8 +6,10 @@
 // Temp include
 #include <stdio.h>
 
-
 #define TM_NO_CONTROLLER  (-1)
+
+static TelldusClient theTelldusClient;
+static bool created;
 
 static const char* getDeviceTypeString(int type);
 
@@ -17,24 +19,28 @@ static void telldusRawDeviceEvent(const char *data, int controllerId, int callba
 static void telldusSensorEvent(const char *protocol, const char *model, int id, int dataType, const char *value, int timestamp, int callbackId, void *context);
 static void telldusControllerEvent(int controllerId, int changeEvent, int changeType, const char *newValue, int callbackId, void *context);
 
-int TelldusClient_Init(TelldusClient *self)
+TelldusClient* TelldusClient_GetInstance(void)
 {
-  *self = (TelldusClient) {0};
-  self->controllerId = TM_NO_CONTROLLER;
+  TelldusClient* self = &theTelldusClient;
+  if( created == false )
+  {
+    *self = (TelldusClient) {0};
+    self->controllerId = TM_NO_CONTROLLER;
 
-  tdInit();
-  int ret = tdGetNumberOfDevices();
-  if (ret == 0)
-  {
-    Log(TM_LOG_INFO, "Telldus has no devices");
+    tdInit();
+    int ret = tdGetNumberOfDevices();
+    if (ret == 0)
+    {
+      Log(TM_LOG_INFO, "Telldus has no devices");
+    }
+    else if( ret < 0)
+    {
+      Log(TM_LOG_ERROR, "Telldus error %s", tdGetErrorString(ret));
+    }
+    Log(TM_LOG_DEBUG, "Telldus has %i devices", ret);
+    created = true;
   }
-  else if( ret < 0)
-  {
-    Log(TM_LOG_ERROR, "Telldus error %s", tdGetErrorString(ret));
-    return -1;
-  }
-  Log(TM_LOG_DEBUG, "Telldus has %i devices", ret);
-  return 0;
+  return self;
 }
 
 bool TelldusClient_IsConnected(TelldusClient *self)

@@ -16,9 +16,13 @@ typedef struct
   bool disconnectRequest;
 } TelldusClient;
 
-int TelldusClient_Init(TelldusClient *self);
+TelldusClient* TelldusClient_GetInstance(void);
 bool TelldusClient_IsConnected(TelldusClient *self);
 int TelldusClient_Connect(TelldusClient *self);
 void TelldusClient_Disconnect(TelldusClient *self);
+static inline char* TelldusClient_GetControllerSerial(TelldusClient *self)
+{
+  return self->controllerSerial;
+}
 
 #endif // TELLDUSCLIENT_H_

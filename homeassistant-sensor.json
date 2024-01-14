@@ -1,0 +1,3 @@
+{
+    "topic": "homeassistant/sensor/{serno}_{protocol}_{model}_{id}_temperature/config"
+}
