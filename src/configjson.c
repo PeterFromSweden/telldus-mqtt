@@ -6,7 +6,15 @@
 #include "log.h"
 #include "configjson.h"
 
+typedef enum {
+  MARKER_SET,
+  MARKER_CLEAR,
+  MARKER_CHECK
+} TMarkerOp;
+
 static bool loggedVersion;
+
+static void contentMarker(ConfigJson* self, TMarkerOp op);
 
 void ConfigJson_Init(ConfigJson* self)
 {
@@ -37,6 +45,8 @@ int ConfigJson_LoadContent(ConfigJson* self, char* configFilename )
   self->contentLen = ftell(f);
   self->contentMaxLen = self->contentLen + 200;
   self->content = malloc(self->contentMaxLen);
+  memset(self->content, 0xdd, self->contentMaxLen);
+  contentMarker(self, MARKER_SET);
   if ( self->content == NULL )
   {
     Log(TM_LOG_ERROR, "Error %s", strerror(errno));
@@ -52,17 +62,34 @@ int ConfigJson_LoadContent(ConfigJson* self, char* configFilename )
     Log(TM_LOG_ERROR, "Error, read %i bytes, expected %i", readCount, self->contentLen);
     return 1;
   }
+  self->content[self->contentLen] = '\0';
+  contentMarker(self, MARKER_CHECK);
   
   return 0;
 }
 
 char* ConfigJson_GetContent(ConfigJson* self)
 {
+  contentMarker(self, MARKER_CHECK);
   return self->content;
+}
+
+long ConfigJson_GetContentLen(ConfigJson* self)
+{
+  contentMarker(self, MARKER_CHECK);
+  return self->contentLen;
+}
+
+long ConfigJson_GetContentMaxLen(ConfigJson* self)
+{
+  contentMarker(self, MARKER_CHECK);
+  return self->contentMaxLen;
 }
 
 int ConfigJson_ParseContent(ConfigJson* self)
 {
+  contentMarker(self, MARKER_CHECK);
+  
   self->json = cJSON_Parse(self->content);
   if ( self->json == NULL )
   {
@@ -81,14 +108,35 @@ int ConfigJson_ParseContent(ConfigJson* self)
 
 void ConfigJson_FreeContent(ConfigJson* self)
 {
+  contentMarker(self, MARKER_CHECK);
+
   if( self->content != NULL )
   {
+    contentMarker(self, MARKER_CLEAR);
     free(self->content);
     self->content = NULL;
     self->contentLen = 0;
     self->contentMaxLen = 0;
   }
 }
+
+char* ConfigJson_GetSubStrPtr(
+  ConfigJson* self, 
+  const char* const property,
+  const char* const subproperty )
+{
+  cJSON* item = cJSON_GetObjectItem(self->json, property);
+  if ( cJSON_IsObject(item) )
+  {
+    cJSON* item2 = cJSON_GetObjectItem( item, subproperty );
+    if( cJSON_IsString( item2 ) )
+    {
+      return item2->valuestring;;
+    }
+  }
+  return NULL;
+}
+
 
 char* ConfigJson_GetStrPtr(ConfigJson* self, const char* const property)
 {
@@ -110,3 +158,30 @@ int ConfigJson_GetInt(ConfigJson* self, const char* const property)
   return -1;
 }
 
+static void contentMarker(ConfigJson* self, TMarkerOp op)
+{
+  if( self->content != NULL )
+  {
+    switch( op )
+    {
+      case MARKER_SET:
+        self->content[self->contentMaxLen-1] = 0x03; // ETX
+        break;
+
+      case MARKER_CLEAR:
+        self->content[self->contentMaxLen-1] = 0;
+        break;
+
+      case MARKER_CHECK:
+        if( self->content[self->contentMaxLen-1] != 0x03 )
+        {
+          Log(TM_LOG_ERROR, "Buffer overrun!");
+        }
+        break;
+      
+      default:
+        Log(TM_LOG_ERROR, "contentMarker!");
+        break;
+    }
+  }
+}

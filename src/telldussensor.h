@@ -16,6 +16,9 @@ typedef struct {
   char id[10];
   char dataType[20];
   char unit[20];
+  char state_topic[100];
+  char availability[100];
+  char value[10];
 } TelldusSensor;
 
 // Callbacks are static methods with context as telldusclient instance reference
