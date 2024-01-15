@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "log.h"
+#include "asrt.h"
 #include "telldusclient.h"
 #include "config.h"
 #include "configjson.h"
@@ -16,6 +17,7 @@ void on_message(struct mosquitto* mosq, void* obj, const struct mosquitto_messag
 MqttClient* MqttClient_GetInstance(void)
 {
   MqttClient* self = &themqttclient;
+
   if( created == false )
   {
     *self = (MqttClient) {0};
@@ -136,11 +138,18 @@ static void json_keywordexpansion(TelldusSensor* sensor, char* sernoPtr, char* b
     TelldusSensor_ItemToString(sensor, TM_SENSOR_CONTENT_ID)
   };
   int i = 0;
+  //Log(TM_LOG_DEBUG, "json pre len=%i", strlen(buf));
   while( *wordsToReplace[i] )
   {
     replaceWords(buf, wordsToReplace[i], replacement[i]);
+    int buflen = strlen(buf);
+    if( buf[buflen-1] != '}' )
+    {
+      Log(TM_LOG_ERROR, "json not ending with }");
+    }
     i++;
   }
+  //Log(TM_LOG_DEBUG, "json post len=%i", strlen(buf));
 }
 
 void MqttClient_AddSensor(MqttClient* self, TelldusSensor* sensor)
@@ -168,6 +177,10 @@ void MqttClient_AddSensor(MqttClient* self, TelldusSensor* sensor)
   ConfigJson_ParseContent(&cjTopic);
   
   char* payload = ConfigJson_GetContent(&cj);
+  //Log(TM_LOG_DEBUG, "%s", ConfigJson_GetStrPtr(&cjTopic, "topic"));
+  strcpy(sensor->state_topic, ConfigJson_GetStrPtr(&cj, "state_topic"));
+  strcpy(sensor->availability,  ConfigJson_GetSubStrPtr(&cj, "availability", "topic"));
+
   mosquitto_publish(
     self->mosq, 
     NULL, 
@@ -182,6 +195,28 @@ void MqttClient_AddSensor(MqttClient* self, TelldusSensor* sensor)
   ConfigJson_Destroy(&cjTopic);
 }
 
+void MqttClient_SensorValue(MqttClient* self, TelldusSensor* sensor)
+{
+  mosquitto_publish(
+    self->mosq, 
+    NULL, 
+    sensor->state_topic, 
+    strlen(sensor->value), 
+    sensor->value, 
+    0, // qos
+    false //retain
+  );
+
+  mosquitto_publish(
+    self->mosq, 
+    NULL, 
+    sensor->availability, 
+    strlen("online"), 
+    "online", 
+    0, // qos
+    false //retain
+  );
+}
 
 /* Callback called when the client receives a CONNACK message from the broker. */
 static void on_connect(struct mosquitto* mosq, void* obj, int reason_code)

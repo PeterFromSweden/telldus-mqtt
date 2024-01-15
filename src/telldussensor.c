@@ -63,7 +63,7 @@ TelldusSensor* TelldusSensor_Create(const char *protocol, const char *model, int
   strcpy(sensor->id, idStr);
   strcpy(sensor->dataType, dataTypeStr);
   strcpy(sensor->unit, TelldusSensor_DataTypeToUnit(dataType));
-  Log(TM_LOG_DEBUG, "New sensor %s", TelldusSensor_ToString(sensor, str, sizeof(str)));
+  //Log(TM_LOG_DEBUG, "New sensor %s", TelldusSensor_ToString(sensor, str, sizeof(str)));
   
   MqttClient_AddSensor(MqttClient_GetInstance(), sensor);
   
@@ -131,4 +131,6 @@ void TelldusSensor_OnEvent(const char *protocol, const char *model, int id, int 
   //TelldusClient* self = (TelldusClient*) context;
   Log(TM_LOG_DEBUG, "telldusSensorEvent %s, %s, %i, %i, %s, %i, %i", protocol, model, id, dataType, value, timestamp, callbackId);
   TelldusSensor* sensor = TelldusSensor_Create(protocol, model, id, dataType, value, timestamp);
+  strcpy(sensor->value, value);
+  MqttClient_SensorValue(MqttClient_GetInstance(), sensor);
 }
