@@ -51,9 +51,9 @@ void MqttClient_Destroy(MqttClient* self)
   mosquitto_lib_cleanup();
 }
 
-bool MqttClient_IsConnected(MqttClient *self)
+TMqConn MqttClient_GetConnection(MqttClient *self)
 {
-  return self->mqconn != TM_MQCONN_NONE;
+  return self->mqconn;
 }
 
 int MqttClient_Connect(MqttClient *self)
@@ -162,6 +162,12 @@ void MqttClient_AddSensor(MqttClient* self, TelldusSensor* sensor)
     TelldusSensor_ToString(sensor, str, sizeof(str))
   );
 
+  if( self->mqconn != TM_MQCONN_OK )
+  {
+    Log(TM_LOG_ERROR, "Not MQTT is not connected...");
+    return;
+  }
+
   ConfigJson cj;
   ConfigJson_Init(&cj);
   ConfigJson_LoadContent(&cj, "telldus-sensor.json");
@@ -218,6 +224,99 @@ void MqttClient_SensorValue(MqttClient* self, TelldusSensor* sensor)
   );
 }
 
+static void json_devicekeywordexpansion(TelldusDevice* device, char* sernoPtr, char* buf)
+{
+  const char* wordsToReplace[] = {
+    "{device_no}", "{serno}", ""
+  };
+  char* replacement[] = {
+    TelldusDevice_ItemToString(device, TM_DEVICE_CONTENT_DEVICENO),
+    sernoPtr
+  };
+  int i = 0;
+  //Log(TM_LOG_DEBUG, "json pre len=%i", strlen(buf));
+  while( *wordsToReplace[i] )
+  {
+    replaceWords(buf, wordsToReplace[i], replacement[i]);
+    int buflen = strlen(buf);
+    if( buf[buflen-1] != '}' )
+    {
+      Log(TM_LOG_ERROR, "json not ending with }");
+    }
+    i++;
+  }
+  //Log(TM_LOG_DEBUG, "json post len=%i", strlen(buf));
+}
+
+void MqttClient_AddDevice(MqttClient* self, TelldusDevice* device)
+{
+  char str[40];
+  char* sernoPtr = TelldusClient_GetControllerSerial(TelldusClient_GetInstance());
+
+  Log(TM_LOG_DEBUG, "AddDevice %s %s", 
+    sernoPtr,
+    TelldusDevice_ToString(device, str, sizeof(str))
+  );
+
+  if( self->mqconn != TM_MQCONN_OK )
+  {
+    Log(TM_LOG_ERROR, "Not MQTT is not connected...");
+    return;
+  }
+
+  ConfigJson cj;
+  ConfigJson_Init(&cj);
+  ConfigJson_LoadContent(&cj, "telldus-device.json");
+  json_devicekeywordexpansion(device, sernoPtr, ConfigJson_GetContent(&cj));
+  // Check for errors.  
+  ConfigJson_ParseContent(&cj);
+  
+  ConfigJson cjTopic;
+  ConfigJson_Init(&cjTopic);
+  ConfigJson_LoadContent(&cjTopic, "homeassistant-device.json");
+  json_devicekeywordexpansion(device, sernoPtr, ConfigJson_GetContent(&cjTopic));
+  // Check for errors.  
+  ConfigJson_ParseContent(&cjTopic);
+  
+  char* payload = ConfigJson_GetContent(&cj);
+  //Log(TM_LOG_DEBUG, "%s", ConfigJson_GetStrPtr(&cjTopic, "topic"));
+  strcpy(device->state_topic, ConfigJson_GetStrPtr(&cj, "state_topic"));
+  strcpy(device->command_topic, ConfigJson_GetStrPtr(&cj, "command_topic"));
+
+  mosquitto_publish(
+    self->mosq, 
+    NULL, 
+    ConfigJson_GetStrPtr(&cjTopic, "topic"), 
+    strlen(payload), 
+    payload, 
+    0, // qos
+    true //retain
+  );
+  
+  mosquitto_subscribe(
+    self->mosq,
+    NULL,
+    device->command_topic,
+    0 // qos
+  );
+
+  ConfigJson_Destroy(&cj);
+  ConfigJson_Destroy(&cjTopic);
+}
+
+void MqttClient_DeviceValue(MqttClient* self, TelldusDevice* device)
+{
+  mosquitto_publish(
+    self->mosq, 
+    NULL, 
+    device->state_topic, 
+    strlen(device->value), 
+    device->value, 
+    0, // qos
+    true //retain
+  );
+}
+
 /* Callback called when the client receives a CONNACK message from the broker. */
 static void on_connect(struct mosquitto* mosq, void* obj, int reason_code)
 {
@@ -232,11 +331,21 @@ static void on_connect(struct mosquitto* mosq, void* obj, int reason_code)
      * retrying in this example, so disconnect. Without this, the client
      * will attempt to reconnect. */
     MqttClient_Disconnect(self);
+    return;
   }
 
   /* You may wish to set a flag here to indicate to your application that the
    * client is now connected. */
   self->mqconn = TM_MQCONN_OK;
+
+  TelldusClient* telldusclient = TelldusClient_GetInstance();
+  int deviceNo = TelldusClient_GetDeviceNo(telldusclient, TM_DEVICE_GET_FIRST);
+  while( deviceNo >= 0 )
+  {
+    TelldusDevice* device = TelldusDevice_Create(deviceNo);
+    MqttClient_AddDevice(self, device);
+    deviceNo = TelldusClient_GetDeviceNo(telldusclient, TM_DEVICE_GET_NEXT);
+  }
 }
 
 
@@ -255,7 +364,23 @@ static void on_publish(struct mosquitto* mosq, void* obj, int mid)
 void on_message(struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg)
 {
   MqttClient* self = (MqttClient*) obj;
-  Log(TM_LOG_DEBUG, "NYI: mqtt message %s %s (%d)", msg->topic, (const char*)msg->payload, msg->payloadlen);
+  Log(TM_LOG_DEBUG, "mqtt message %s %s (%d)", msg->topic, (const char*)msg->payload, msg->payloadlen);
+
+  TelldusClient* telldusclient = TelldusClient_GetInstance();
+  if( !TelldusClient_IsConnected(telldusclient) )
+  {
+    Log(TM_LOG_WARNING, "mqttclient on_message, not connected to telldus => ignore");
+    return;
+  }
+
+  TelldusDevice* device = TelldusDevice_GetTopic(msg->topic);
+  if( device == NULL )
+  {
+    Log(TM_LOG_ERROR, "mqttclient on_message, device new? => ignore");
+    return;
+  }
+
+  TelldusDevice_Action(device, msg->payload);
 
   /*
   char telldusTopic[70];

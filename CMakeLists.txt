@@ -17,6 +17,7 @@ add_executable( ${PROJECT_NAME}
   "src/log.c"
   "src/myconsole.c"
   "src/criticalsection_stub.c"
+  "src/telldusdevice.c"
   "src/telldussensor.c"
   "src/mqttclient.c" 
 )
@@ -26,7 +27,9 @@ target_link_libraries( ${PROJECT_NAME} ${MOSQUITTO_LIBRARIES} ${TELLDUS_CORE_LIB
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/telldus-core-mqtt.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/telldus-sensor.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/telldus-device.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/homeassistant-sensor.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/homeassistant-device.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 install( TARGETS ${PROJECT_NAME} )
 

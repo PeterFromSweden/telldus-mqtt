@@ -1,5 +1,6 @@
 #include <telldus-core.h>
 #include "log.h"
+#include "telldusdevice.h"
 #include "telldussensor.h"
 #include "telldusclient.h"
 
@@ -38,6 +39,7 @@ TelldusClient* TelldusClient_GetInstance(void)
       Log(TM_LOG_ERROR, "Telldus error %s", tdGetErrorString(ret));
     }
     Log(TM_LOG_DEBUG, "Telldus has %i devices", ret);
+    self->deviceCount = ret;
     created = true;
   }
   return self;
@@ -102,7 +104,7 @@ int TelldusClient_Connect(TelldusClient *self)
   
   self->evtController   = tdRegisterControllerEvent(&telldusControllerEvent, (void*) self);
   self->evtDeviceChange = tdRegisterDeviceChangeEvent(&telldusDeviceChangeEvent, (void*) self);
-  self->evtDevice       = tdRegisterDeviceEvent(&telldusDeviceEvent, (void*) self);
+  self->evtDevice       = tdRegisterDeviceEvent(&TelldusDevice_OnEvent, (void*) self);
   self->evtSensor       = tdRegisterSensorEvent(&TelldusSensor_OnEvent, (void*) self);
   self->evtRawDevice    = tdRegisterRawDeviceEvent(&telldusRawDeviceEvent, (void*) self);
 
@@ -122,6 +124,43 @@ void TelldusClient_Disconnect(TelldusClient *self)
   self->evtSensor = 0;
   self->evtRawDevice = 0;
   self->controllerId = TM_NO_CONTROLLER;
+}
+
+int TelldusClient_GetDeviceNo(TelldusClient *self, TDeviceGetOp op)
+{
+  int ret;
+  int deviceIndex;
+
+  if( op == TM_DEVICE_GET_FIRST )
+  {
+    deviceIndex = 0;
+    Log(TM_LOG_INFO, "Telldus first device");
+  }
+  else
+  {
+    deviceIndex = self->lastDeviceIx + 1;
+  }
+
+  if( deviceIndex >= self->deviceCount )
+  {
+    return -1; // No more device numbers
+  }
+  
+  ret = tdGetDeviceId(deviceIndex);
+  if (ret == 0)
+  {
+    Log(TM_LOG_ERROR, "Telldus has no device index %i", deviceIndex);
+    return -1;
+  }
+  else if( ret < 0)
+  {
+    Log(TM_LOG_ERROR, "Telldus device index %i error %s", deviceIndex, tdGetErrorString(ret));
+    return -1;
+  }
+  
+  self->lastDeviceIx = deviceIndex;
+  
+  return ret; // Device Id
 }
 
 static const char* getDeviceTypeString(int type)
@@ -181,7 +220,7 @@ static void telldusRawDeviceEvent(const char *data, int controllerId, int callba
 static void telldusSensorEvent(const char *protocol, const char *model, int id, int dataType, const char *value, int timestamp, int callbackId, void *context)
 {
   TelldusClient* self = (TelldusClient*) context;
-  //Log(TM_LOG_DEBUG, "telldusSensorEvent %s, %s, %i, %i, %s, %i, %i", protocol, model, id, dataType, value, timestamp, callbackId);
+  Log(TM_LOG_DEBUG, "telldusSensorEvent %s, %s, %i, %i, %s, %i, %i", protocol, model, id, dataType, value, timestamp, callbackId);
 }
 #if 0
 static void getTelldusDevices(void)

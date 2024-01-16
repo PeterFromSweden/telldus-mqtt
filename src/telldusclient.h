@@ -3,6 +3,11 @@
 
 #include <stdbool.h>
 
+typedef enum {
+  TM_DEVICE_GET_FIRST,
+  TM_DEVICE_GET_NEXT,
+} TDeviceGetOp;
+
 typedef struct
 {
   int controllerId;
@@ -12,6 +17,8 @@ typedef struct
   int evtDevice;
   int evtSensor;
   int evtRawDevice;
+  int deviceCount;
+  int lastDeviceIx;
   bool mutelog;
   bool disconnectRequest;
 } TelldusClient;
@@ -20,6 +27,7 @@ TelldusClient* TelldusClient_GetInstance(void);
 bool TelldusClient_IsConnected(TelldusClient *self);
 int TelldusClient_Connect(TelldusClient *self);
 void TelldusClient_Disconnect(TelldusClient *self);
+int TelldusClient_GetDeviceNo(TelldusClient *self, TDeviceGetOp op);
 static inline char* TelldusClient_GetControllerSerial(TelldusClient *self)
 {
   return self->controllerSerial;
