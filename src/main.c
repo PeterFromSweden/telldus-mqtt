@@ -31,9 +31,14 @@ static CriticalSection* criticalsectionPtr;
 
 int main(int argc, char *argv[])
 {
-  printf("main\r\n");
-  Log_Init(TM_LOG_CONSOLE, "telldus-mqtt", TM_LOG_DEBUG);
-  //Log_Init(TM_LOG_SYSLOG, "telldus-mqtt", TM_LOG_DEBUG);
+  if( argc > 1 && strcmp(argv[1], "--nodaemon") == 0 )
+  {
+    Log_Init(TM_LOG_CONSOLE, "telldus-mqtt", TM_LOG_DEBUG);
+  }
+  else
+  {
+    Log_Init(TM_LOG_SYSLOG, "telldus-mqtt", TM_LOG_INFO);
+  }
 
   config = Config_GetInstance();
   Config_Load(config, "telldus-core-mqtt.json");
@@ -49,7 +54,7 @@ int main(int argc, char *argv[])
     else
     {
       mqttclient = MqttClient_GetInstance();
-      if( !MqttClient_IsConnected(mqttclient) )
+      if( MqttClient_GetConnection(mqttclient) == TM_MQCONN_NONE )
       {
         MqttClient_Connect(mqttclient);
       }

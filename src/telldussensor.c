@@ -130,6 +130,12 @@ void TelldusSensor_OnEvent(const char *protocol, const char *model, int id, int 
 {
   //TelldusClient* self = (TelldusClient*) context;
   Log(TM_LOG_DEBUG, "telldusSensorEvent %s, %s, %i, %i, %s, %i, %i", protocol, model, id, dataType, value, timestamp, callbackId);
+  if( MqttClient_GetConnection(MqttClient_GetInstance()) != TM_MQCONN_OK )
+  {
+    Log(TM_LOG_WARNING, "telldusSensorEvent, not connected to mqtt => ignore");
+    return;
+  }
+
   TelldusSensor* sensor = TelldusSensor_Create(protocol, model, id, dataType, value, timestamp);
   strcpy(sensor->value, value);
   MqttClient_SensorValue(MqttClient_GetInstance(), sensor);

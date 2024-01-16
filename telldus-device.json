@@ -1,0 +1,16 @@
+{
+    "state_topic": "telldus/{serno}/switch/{device_no}/state",
+    "command_topic": "telldus/{serno}/switch/{device_no}/set",
+    "unique_id": "telldus/{serno}/switch/{device_no}",
+    "device": {
+        "manufacturer": "Telldus",
+        "identifiers": [
+            "{serno}-device-{device_no}"
+        ],
+        "name": "{serno}-switch-{device_no}"
+    },
+    "origin": {
+        "name": "telldus-mqtt",
+        "sw_version": "0.1.3"
+    }
+}

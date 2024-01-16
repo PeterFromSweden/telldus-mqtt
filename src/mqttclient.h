@@ -2,6 +2,7 @@
 #define MQTTCLIENT_H_
 
 #include "telldussensor.h"
+#include "telldusdevice.h"
 #include "config.h"
 #include "mosquitto.h"
 
@@ -21,10 +22,12 @@ typedef struct
 
 MqttClient* MqttClient_GetInstance(void);
 void MqttClient_Destroy(MqttClient* self);
-bool MqttClient_IsConnected(MqttClient *self);
+TMqConn MqttClient_GetConnection(MqttClient *self);
 int MqttClient_Connect(MqttClient *self);
 void MqttClient_Disconnect(MqttClient *self);
 void MqttClient_AddSensor(MqttClient* self, TelldusSensor* sensor);
 void MqttClient_SensorValue(MqttClient* self, TelldusSensor* sensor);
+void MqttClient_AddDevice(MqttClient* self, TelldusDevice* device);
+void MqttClient_DeviceValue(MqttClient* self, TelldusDevice* device);
 
 #endif // MQTTCLIENT_H_
