@@ -1,0 +1,44 @@
+{
+    "device-config": {
+        "topic": "homeassistant/switch/{serno}_device_{device_no}/config"
+    },
+    "device-config-content": {
+        "state_topic": "telldus/{serno}/switch/{device_no}/state",
+        "command_topic": "telldus/{serno}/switch/{device_no}/set",
+        "unique_id": "telldus/{serno}/switch/{device_no}",
+        "device": {
+            "manufacturer": "Telldus",
+            "identifiers": [
+                "{serno}-device-{device_no}"
+            ],
+            "name": "{serno}-switch-{device_no}"
+        },
+        "origin": {
+            "name": "telldus-mqtt",
+            "sw_version": "0.1.3"
+        }
+    },
+    "sensor-config": {
+        "topic": "homeassistant/sensor/{serno}_{protocol}_{model}_{id}_{datatype}/config"
+    },
+    "sensor-config-content": {
+        "device_class": "{datatype}",
+        "unit_of_measurement": "{unit}",
+        "state_topic": "telldus/{serno}/sensor/{protocol}_{model}_{id}/{datatype}",
+        "unique_id": "telldus/{serno}/sensor/{protocol}_{model}_{id}/{datatype}",
+        "device": {
+            "manufacturer": "Telldus",
+            "identifiers": [
+                "{serno}-{protocol}-{model}-{id}-{datatype}"
+            ],
+            "name": "{serno}-{protocol}-{model}-{id}-{datatype}"
+        },
+        "availability": {
+            "topic": "telldus/{serno}/sensor/{protocol}_{model}_{id}/status"
+        },
+        "origin": {
+            "name": "telldus-mqtt",
+            "sw_version": "0.1.3"
+        }
+    }
+}

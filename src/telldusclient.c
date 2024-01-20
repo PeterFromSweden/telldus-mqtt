@@ -134,7 +134,7 @@ int TelldusClient_GetDeviceNo(TelldusClient *self, TDeviceGetOp op)
   if( op == TM_DEVICE_GET_FIRST )
   {
     deviceIndex = 0;
-    Log(TM_LOG_INFO, "Telldus first device");
+    // Log(TM_LOG_DEBUG, "Telldus first device");
   }
   else
   {

@@ -26,10 +26,15 @@ void ConfigJson_Init(ConfigJson* self)
   }
 }
 
+void ConfigJson_FreeJson(ConfigJson* self)
+{
+  cJSON_Delete( self->json );
+}
+
 void ConfigJson_Destroy(ConfigJson* self)
 {
   ConfigJson_FreeContent( self );
-  cJSON_Delete( self->json );
+  ConfigJson_FreeJson( self );
 }
 
 int ConfigJson_LoadContent(ConfigJson* self, char* configFilename )
@@ -66,6 +71,23 @@ int ConfigJson_LoadContent(ConfigJson* self, char* configFilename )
   contentMarker(self, MARKER_CHECK);
   
   return 0;
+}
+
+char* ConfigJson_CopyToContent(ConfigJson* self, char* fromString)
+{
+  contentMarker(self, MARKER_CHECK);
+  int fsl = strlen(fromString );
+  if( fsl > self->contentMaxLen - 3 )
+  {
+    Log(TM_LOG_DEBUG, "CopyToContent overflow");
+  }
+  Log(TM_LOG_DEBUG, "self->content:\n%s", self->content);
+  Log(TM_LOG_DEBUG, "fromString\n%s", fromString);
+  strncpy(self->content, fromString, self->contentMaxLen);
+  Log(TM_LOG_DEBUG, "self->content:\n%s", self->content);
+  self->content[ self->contentMaxLen - 2 ] = '\0';
+  contentMarker(self, MARKER_CHECK);
+  return self->content;
 }
 
 char* ConfigJson_GetContent(ConfigJson* self)
@@ -120,42 +142,120 @@ void ConfigJson_FreeContent(ConfigJson* self)
   }
 }
 
-char* ConfigJson_GetSubStrPtr(
+static cJSON* getPropList(cJSON* item, const char* const propertyList[])
+{
+  if( item == NULL )
+  {
+    return NULL;
+  }
+  
+  if( *propertyList[0] == '\0' )
+  {
+    return item;
+  }
+
+  return getPropList(cJSON_GetObjectItem(item, propertyList[0]), &propertyList[1]);
+}
+
+char* ConfigJson_GetStringFromPropList(
   ConfigJson* self, 
-  const char* const property,
-  const char* const subproperty )
+  const char* const propertyList[] )
 {
-  cJSON* item = cJSON_GetObjectItem(self->json, property);
-  if ( cJSON_IsObject(item) )
+  contentMarker(self, MARKER_CHECK);
+  cJSON* item = getPropList(self->json, propertyList);
+  if( item == NULL )
   {
-    cJSON* item2 = cJSON_GetObjectItem( item, subproperty );
-    if( cJSON_IsString( item2 ) )
-    {
-      return item2->valuestring;;
-    }
+    Log(TM_LOG_ERROR, "Json property not found!");
+    return NULL;
   }
-  return NULL;
+
+  if( !cJSON_IsString( item ) )
+  {
+    Log(TM_LOG_ERROR, "Json property is not a string!");
+  }
+
+  return item->valuestring;
 }
 
-
-char* ConfigJson_GetStrPtr(ConfigJson* self, const char* const property)
+char* ConfigJson_GetStringFromProp(ConfigJson* self, const char* const property)
 {
-  cJSON* item = cJSON_GetObjectItem(self->json, property);
-  if ( cJSON_IsString(item) )
-  {
-    return item->valuestring;
-  }
-  return NULL;
+  return ConfigJson_GetStringFromPropList(self, 
+            (const char * const []) {property, ""});
 }
 
-int ConfigJson_GetInt(ConfigJson* self, const char* const property)
+bool ConfigJson_SetStringFromPropList(
+  ConfigJson* self, 
+  const char* const propertyList[],
+  const char* propertyToChange,
+  const char* str )
 {
-  cJSON* item = cJSON_GetObjectItem(self->json, property);
-  if ( cJSON_IsNumber(item) )
+  contentMarker(self, MARKER_CHECK);
+  cJSON* item = getPropList(self->json, propertyList);
+  if( item == NULL )
   {
-    return item->valueint;
+    Log(TM_LOG_ERROR, "Json property not found!");
+    return false;
   }
-  return -1;
+
+  cJSON* oldItem = cJSON_GetObjectItem(item, propertyToChange);
+  if( !cJSON_IsString( oldItem ) )
+  {
+    Log(TM_LOG_ERROR, "Json property is not a string!");
+    return false;
+  }
+
+  cJSON* newItem = cJSON_CreateString(str);
+  cJSON_ReplaceItemInObject(item, propertyToChange, newItem);
+
+  contentMarker(self, MARKER_CHECK);
+  return true;
+}
+
+char* ConfigJson_GetJsonFromPropList(
+  ConfigJson* self, 
+  const char* const propertyList[] )
+{
+  contentMarker(self, MARKER_CHECK);
+  cJSON* item = getPropList(self->json, propertyList);
+  if( item == NULL )
+  {
+    Log(TM_LOG_ERROR, "Json property not found!");
+    return NULL;
+  }
+
+  return cJSON_Print(item);
+}
+
+char* ConfigJson_GetJsonFromProp(ConfigJson* self, const char* const property)
+{
+  return ConfigJson_GetJsonFromPropList(self, 
+            (const char * const []) {property, ""});
+}
+
+int ConfigJson_GetIntFromPropList(
+  ConfigJson* self, 
+  const char* const propertyList[] )
+{
+  contentMarker(self, MARKER_CHECK);
+  cJSON* item = getPropList(self->json, propertyList);
+  if( item == NULL )
+  {
+    Log(TM_LOG_ERROR, "Json property not found!");
+    return 0;
+  }
+
+  if( !cJSON_IsNumber( item ) )
+  {
+    Log(TM_LOG_ERROR, "Json property is not a number!");
+  }
+
+  return item->valueint;
+}
+
+int ConfigJson_GetIntFromProp(ConfigJson* self, const char* const property)
+{
+  return ConfigJson_GetIntFromPropList(self, 
+            (const char * const []) {property, ""});
 }
 
 static void contentMarker(ConfigJson* self, TMarkerOp op)
@@ -180,7 +280,7 @@ static void contentMarker(ConfigJson* self, TMarkerOp op)
         break;
       
       default:
-        Log(TM_LOG_ERROR, "contentMarker!");
+        Log(TM_LOG_ERROR, "contentMarker illegal operation!");
         break;
     }
   }

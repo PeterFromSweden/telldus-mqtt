@@ -6,33 +6,79 @@
   "filter-non-transled": "yes",
   "topic-translation": [
     {
-      "telldus": "telldus/fineoffset/temperaturehumidity/167",
-      "mqtt": "house/hall"
+      "telldus": "telldus/A703AKOX/sensor/fineoffset_temperaturehumidity_135",
+      "mqtt": "Hemma/Uteförråd",
+      "name": "Uteförråd"
     },
     {
-      "telldus": "telldus/fineoffset/temperaturehumidity/183",
-      "mqtt": "house/kitchen"
+      "telldus": "telldus/A703AKOX/sensor/fineoffset_temperaturehumidity_167",
+      "mqtt": "Hemma/Matkällare",
+      "name": "Matkällare"
     },
     {
-      "telldus": "telldus/fineoffset/temperaturehumidity/231",
-      "mqtt": "house/laundry"
+      "telldus": "telldus/A703AKOX/sensor/fineoffset_temperaturehumidity_183",
+      "mqtt": "Hemma/Tvätt",
+      "name": "Tvättstuga"
     },
     {
-      "telldus": "telldus/mandolyn/temperaturehumidity/11",
-      "mqtt": "house/shed"
+      "telldus": "telldus/A703AKOX/sensor/fineoffset_temperaturehumidity_231",
+      "mqtt": "Hemma/Hall",
+      "name": "Hall"
     },
     {
-      "telldus": "telldus/oregon/1A2D/227",
-      "mqtt": "house/neighbor"
+      "telldus": "telldus/A703AKOX/sensor/mandolyn_temperaturehumidity_11",
+      "mqtt": "Hemma/Köksfönster",
+      "name": "Köksfönster"
     },
     {
-      "telldus": "telldus/device/1",
-      "mqtt": "house/example"
+      "telldus": "telldus/A703AKOX/sensor/oregon_1A2D_80",
+      "mqtt": "Grannen/Ute",
+      "name": "Grannen-ute"
     },
     {
-      "telldus": "telldus/device/2",
-      "mqtt": "house/christmastree"
+      "telldus": "telldus/A703AKOX/sensor/oregon_1A2D_222",
+      "mqtt": "Grannen/Inne1",
+      "name": "Grannen-inne1"
+    },
+    {
+      "telldus": "telldus/A703AKOX/sensor/oregon_1A2D_241",
+      "mqtt": "Grannen/Inne2",
+      "name": "Grannen-inne2"
+    },
+    {
+      "telldus": "telldus/A703AKOX/switch/2",
+      "mqtt": "Hemma/Arbetsrum",
+      "name": "Hemma-arbetsrum"
+    },
+    {
+      "telldus": "telldus/A703AKOX/switch/3",
+      "mqtt": "Hemma/Matsal",
+      "name": "Hemma-matsal"
+    },
+    {
+      "telldus": "telldus/A703AKOX/switch/4",
+      "mqtt": "Hemma/Kök",
+      "name": "Hemma-kök"
+    },
+    {
+      "telldus": "telldus/A703AKOX/switch/5",
+      "mqtt": "Hemma/Julgran",
+      "name": "Hemma-julgran"
+    },
+    {
+      "telldus": "telldus/A703AKOX/switch/6",
+      "mqtt": "Hemma/Arbetsrum2",
+      "name": "Hemma-arbetsrum2"
+    },
+    {
+      "telldus": "telldus/A703AKOX/switch/7",
+      "mqtt": "Hemma/Sovrum",
+      "name": "Hemma-sovrum"
+    },
+    {
+      "telldus": "telldus/A703AKOX/switch/8",
+      "mqtt": "Hemma/JulbelysningUte",
+      "name": "Hemma-JulUte"
     }
-
   ]
 }

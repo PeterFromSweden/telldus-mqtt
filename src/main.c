@@ -9,6 +9,7 @@
 #include "mqttclient.h"
 #include "log.h"
 #include "config.h"
+#include "asrt.h"
 
 
 static Config* config;
@@ -41,7 +42,7 @@ int main(int argc, char *argv[])
   }
 
   config = Config_GetInstance();
-  Config_Load(config, "telldus-core-mqtt.json");
+  ASRT( !Config_Load(config, "telldus-core-mqtt.json") );
 
   telldusclient = TelldusClient_GetInstance();
 

@@ -5,6 +5,7 @@
 #include "telldusclient.h"
 #include "config.h"
 #include "configjson.h"
+#include "stringutils.h"
 #include "mqttclient.h"
 
 static MqttClient themqttclient;
@@ -112,18 +113,7 @@ void MqttClient_Disconnect(MqttClient *self)
   self->mqconn = TM_MQCONN_NONE;
 }
 
-void replaceWords(char *buffer, const char *find, const char *replace) {
-    char *pos = buffer;
-    int findLen = strlen(find);
-    int replaceLen = strlen(replace);
-
-    while ((pos = strstr(pos, find)) != NULL) {
-        memmove(pos + replaceLen, pos + findLen, strlen(pos + findLen) + 1);
-        memcpy(pos, replace, replaceLen);
-        pos += replaceLen;
-    }
-}
-
+#if 0
 static void json_keywordexpansion(TelldusSensor* sensor, char* sernoPtr, char* buf)
 {
   const char* wordsToReplace[] = {
@@ -151,6 +141,7 @@ static void json_keywordexpansion(TelldusSensor* sensor, char* sernoPtr, char* b
   }
   //Log(TM_LOG_DEBUG, "json post len=%i", strlen(buf));
 }
+#endif
 
 void MqttClient_AddSensor(MqttClient* self, TelldusSensor* sensor)
 {
@@ -170,35 +161,59 @@ void MqttClient_AddSensor(MqttClient* self, TelldusSensor* sensor)
 
   ConfigJson cj;
   ConfigJson_Init(&cj);
-  ConfigJson_LoadContent(&cj, "telldus-sensor.json");
-  json_keywordexpansion(sensor, sernoPtr, ConfigJson_GetContent(&cj));
-  // Check for errors.  
-  ConfigJson_ParseContent(&cj);
-  
-  ConfigJson cjTopic;
-  ConfigJson_Init(&cjTopic);
-  ConfigJson_LoadContent(&cjTopic, "homeassistant-sensor.json");
-  json_keywordexpansion(sensor, sernoPtr, ConfigJson_GetContent(&cjTopic));
-  // Check for errors.  
-  ConfigJson_ParseContent(&cjTopic);
-  
-  char* payload = ConfigJson_GetContent(&cj);
-  //Log(TM_LOG_DEBUG, "%s", ConfigJson_GetStrPtr(&cjTopic, "topic"));
-  strcpy(sensor->state_topic, ConfigJson_GetStrPtr(&cj, "state_topic"));
-  strcpy(sensor->availability,  ConfigJson_GetSubStrPtr(&cj, "availability", "topic"));
+  ASRT( !ConfigJson_LoadContent(&cj, "telldus-mqtt-homeassistant.json") );
+  ReplaceWordList(ConfigJson_GetContent(&cj), 
+    (const char * const []) {
+      "{datatype}", "{unit}", "{serno}", "{protocol}", "{model}", "{id}", ""
+      },
+    (const char * const []) {
+      sensor->dataType,
+      sensor->unit,
+      sernoPtr,
+      sensor->protocol,
+      sensor->model,
+      sensor->id,
+      ""  
+      });
 
+  
+  // Translate default generated topics with user defined.
+  char* name = Config_GetTopicTranslation(self->config, ConfigJson_GetContent(&cj) );
+
+  if( name == NULL )
+  {
+    // No match
+    ConfigJson_ParseContent(&cj);
+  }
+  else
+  {
+    ConfigJson_ParseContent(&cj);
+    ConfigJson_SetStringFromPropList(&cj, 
+      (const char * const []) {"sensor-config-content", "device", ""},
+    "name", 
+    name);
+  }
+
+  //Log(TM_LOG_DEBUG, "%s", ConfigJson_GetStrPtr(&cjTopic, "topic"));
+  strcpy(sensor->state_topic, ConfigJson_GetStringFromPropList(&cj, 
+    (const char * const []) {"sensor-config-content", "state_topic", ""}));
+  strcpy(sensor->availability,  ConfigJson_GetStringFromPropList(&cj, 
+    (const char * const []) {"sensor-config-content", "availability", "topic", ""}));
+
+  char* topic = ConfigJson_GetStringFromPropList(&cj, 
+      (const char * const []) {"sensor-config", "topic", ""});
+  char* payload = ConfigJson_GetJsonFromProp(&cj, "sensor-config-content");
   mosquitto_publish(
     self->mosq, 
     NULL, 
-    ConfigJson_GetStrPtr(&cjTopic, "topic"), 
-    strlen(payload), 
+    topic, 
+    strlen(payload),
     payload, 
     0, // qos
     true //retain
   );
   
   ConfigJson_Destroy(&cj);
-  ConfigJson_Destroy(&cjTopic);
 }
 
 void MqttClient_SensorValue(MqttClient* self, TelldusSensor* sensor)
@@ -224,30 +239,6 @@ void MqttClient_SensorValue(MqttClient* self, TelldusSensor* sensor)
   );
 }
 
-static void json_devicekeywordexpansion(TelldusDevice* device, char* sernoPtr, char* buf)
-{
-  const char* wordsToReplace[] = {
-    "{device_no}", "{serno}", ""
-  };
-  char* replacement[] = {
-    TelldusDevice_ItemToString(device, TM_DEVICE_CONTENT_DEVICENO),
-    sernoPtr
-  };
-  int i = 0;
-  //Log(TM_LOG_DEBUG, "json pre len=%i", strlen(buf));
-  while( *wordsToReplace[i] )
-  {
-    replaceWords(buf, wordsToReplace[i], replacement[i]);
-    int buflen = strlen(buf);
-    if( buf[buflen-1] != '}' )
-    {
-      Log(TM_LOG_ERROR, "json not ending with }");
-    }
-    i++;
-  }
-  //Log(TM_LOG_DEBUG, "json post len=%i", strlen(buf));
-}
-
 void MqttClient_AddDevice(MqttClient* self, TelldusDevice* device)
 {
   char str[40];
@@ -266,27 +257,47 @@ void MqttClient_AddDevice(MqttClient* self, TelldusDevice* device)
 
   ConfigJson cj;
   ConfigJson_Init(&cj);
-  ConfigJson_LoadContent(&cj, "telldus-device.json");
-  json_devicekeywordexpansion(device, sernoPtr, ConfigJson_GetContent(&cj));
-  // Check for errors.  
-  ConfigJson_ParseContent(&cj);
-  
-  ConfigJson cjTopic;
-  ConfigJson_Init(&cjTopic);
-  ConfigJson_LoadContent(&cjTopic, "homeassistant-device.json");
-  json_devicekeywordexpansion(device, sernoPtr, ConfigJson_GetContent(&cjTopic));
-  // Check for errors.  
-  ConfigJson_ParseContent(&cjTopic);
-  
-  char* payload = ConfigJson_GetContent(&cj);
-  //Log(TM_LOG_DEBUG, "%s", ConfigJson_GetStrPtr(&cjTopic, "topic"));
-  strcpy(device->state_topic, ConfigJson_GetStrPtr(&cj, "state_topic"));
-  strcpy(device->command_topic, ConfigJson_GetStrPtr(&cj, "command_topic"));
+  ASRT( !ConfigJson_LoadContent(&cj, "telldus-mqtt-homeassistant.json") );
+  ReplaceWordList(ConfigJson_GetContent(&cj), 
+    (const char * const []) {
+      "{device_no}", "{serno}", ""
+      },
+    (const char * const []) {
+      TelldusDevice_ItemToString(device, TM_DEVICE_CONTENT_DEVICENO),
+      sernoPtr,
+      ""  
+      });
 
+  // Translate default generated topics with user defined.
+  char* name = Config_GetTopicTranslation(self->config, ConfigJson_GetContent(&cj) );
+
+  if( name == NULL )
+  {
+    // No match
+    ConfigJson_ParseContent(&cj);
+  }
+  else
+  {
+    ConfigJson_ParseContent(&cj);
+    ConfigJson_SetStringFromPropList(&cj, 
+      (const char * const []) {"device-config-content", "device", ""},
+    "name", 
+    name);
+  }
+  
+  //Log(TM_LOG_DEBUG, "%s", ConfigJson_GetStrPtr(&cjTopic, "topic"));
+  strcpy(device->state_topic, ConfigJson_GetStringFromPropList(&cj, 
+          (const char * const []) {"device-config-content", "state_topic", ""}));
+  strcpy(device->command_topic, ConfigJson_GetStringFromPropList(&cj, 
+          (const char * const []) {"device-config-content", "command_topic", ""}));
+
+  char* topic = ConfigJson_GetStringFromPropList(&cj, 
+      (const char * const []) {"device-config", "topic", ""});
+  char* payload = ConfigJson_GetJsonFromProp(&cj, "device-config-content");
   mosquitto_publish(
     self->mosq, 
-    NULL, 
-    ConfigJson_GetStrPtr(&cjTopic, "topic"), 
+    NULL,
+    topic,
     strlen(payload), 
     payload, 
     0, // qos
@@ -301,7 +312,6 @@ void MqttClient_AddDevice(MqttClient* self, TelldusDevice* device)
   );
 
   ConfigJson_Destroy(&cj);
-  ConfigJson_Destroy(&cjTopic);
 }
 
 void MqttClient_DeviceValue(MqttClient* self, TelldusDevice* device)
@@ -381,30 +391,5 @@ void on_message(struct mosquitto* mosq, void* obj, const struct mosquitto_messag
   }
 
   TelldusDevice_Action(device, msg->payload);
-
-  /*
-  char telldusTopic[70];
-  if ( Config_GetTopicTranslation(&config, "mqtt", msg->topic, "telldus", telldusTopic, sizeof(telldusTopic)) )
-  {
-    // No match
-    strncpy(telldusTopic, msg->topic, sizeof(telldusTopic));
-  }
-  
-  int rc;
-  if ( msg->payloadlen == 2 )
-  {
-    // on
-    //rc = tdTurnOn(1);
-  }
-  else
-  {
-    // on
-    //rc = tdTurnOff(1);
-  }
-  // if ( rc != TELLSTICK_SUCCESS )
-  // {
-  //   fprintf(stderr, "Turn on/off %s\r\n", tdGetErrorString(rc));
-  // }
-  */
 }
 

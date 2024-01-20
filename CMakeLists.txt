@@ -17,21 +17,11 @@ add_executable( ${PROJECT_NAME}
   "src/log.c"
   "src/myconsole.c"
   "src/criticalsection_stub.c"
+  "src/stringutils.c" 
   "src/telldusdevice.c"
   "src/telldussensor.c"
   "src/mqttclient.c" 
 )
-
-target_include_directories( ${PROJECT_NAME} PRIVATE ${MOSQUITTO_INCLUDE_DIRS} ${TELLDUS_CORE_INCLUDE_DIRS} ${CJSON_INCLUDE_DIRS})
-target_link_libraries( ${PROJECT_NAME} ${MOSQUITTO_LIBRARIES} ${TELLDUS_CORE_LIBRARIES}  ${CJSON_LIBRARIES})
-
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/telldus-core-mqtt.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/telldus-sensor.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/telldus-device.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/homeassistant-sensor.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/homeassistant-device.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-
-install( TARGETS ${PROJECT_NAME} )
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   target_sources( ${PROJECT_NAME} PRIVATE 
@@ -47,3 +37,30 @@ endif()
 if(MSVC)
   add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif()
+
+target_include_directories( ${PROJECT_NAME} PRIVATE ${MOSQUITTO_INCLUDE_DIRS} ${TELLDUS_CORE_INCLUDE_DIRS} ${CJSON_INCLUDE_DIRS})
+target_link_libraries( ${PROJECT_NAME} ${MOSQUITTO_LIBRARIES} ${TELLDUS_CORE_LIBRARIES}  ${CJSON_LIBRARIES})
+
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/telldus-core-mqtt.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/telldus-mqtt-homeassistant.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
+# ----
+include( CTest )
+
+add_executable( testconfig tests/testconfig.c src/config.c src/configjson.c src/stringutils.c src/log.c src/myconsole.c src/mysyslog_linux.c)
+add_test( NAME testconfig COMMAND testconfig )
+target_include_directories( testconfig PRIVATE src ${MOSQUITTO_INCLUDE_DIRS} ${TELLDUS_CORE_INCLUDE_DIRS} ${CJSON_INCLUDE_DIRS})
+target_link_libraries( testconfig  ${CJSON_LIBRARIES})
+
+add_executable( testjson tests/testjson.c src/configjson.c src/stringutils.c src/log.c src/myconsole.c src/mysyslog_linux.c)
+add_test( NAME testjson COMMAND testjson )
+target_include_directories( testjson PRIVATE src ${MOSQUITTO_INCLUDE_DIRS} ${TELLDUS_CORE_INCLUDE_DIRS} ${CJSON_INCLUDE_DIRS})
+target_link_libraries( testjson  ${CJSON_LIBRARIES})
+
+add_executable( teststringutils tests/teststringutils.c src/stringutils.c )
+add_test( NAME teststringutils COMMAND teststringutils )
+target_include_directories( teststringutils PRIVATE src ${MOSQUITTO_INCLUDE_DIRS} ${TELLDUS_CORE_INCLUDE_DIRS} ${CJSON_INCLUDE_DIRS})
+# ----
+
+install( TARGETS ${PROJECT_NAME} )
+
