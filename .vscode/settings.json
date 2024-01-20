@@ -1,5 +1,8 @@
 {
     "files.associations": {
-        "mqttclient.h": "c"
+        "mqttclient.h": "c",
+        "config.h": "c",
+        "configjson.h": "c",
+        "cjson.h": "c"
     }
 }

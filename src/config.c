@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include "log.h"
+#include "stringutils.h"
 #include "config.h"
 
 static Config theConfig;
@@ -20,22 +21,30 @@ Config* Config_GetInstance(void)
   return self;
 }
 
+void Config_Destroy(Config* self)
+{
+  ConfigJson_FreeContent( &self->configJson );
+}
+
 int Config_Load(Config* self, char* configFilename )
 {
-  ConfigJson_LoadContent( &self->configJson, configFilename );
+  if (ConfigJson_LoadContent( &self->configJson, configFilename ))
+  {
+    return 1;
+  }
   ConfigJson_ParseContent( &self->configJson );
-  ConfigJson_FreeContent( &self->configJson );
+  //ConfigJson_FreeContent( &self->configJson );
   return 0;
 }
 
 char* Config_GetStrPtr(Config* self, const char* const property)
 {
-  return ConfigJson_GetStrPtr(&self->configJson, property);
+  return ConfigJson_GetStringFromProp(&self->configJson, property);
 }
 
 int Config_GetInt(Config* self, const char* const property)
 {
-  return ConfigJson_GetInt( &self->configJson, property );
+  return ConfigJson_GetIntFromProp( &self->configJson, property );
 }
 
 void Config_GetStr(Config* self, const char* const property, char* outputString, int outputLen)
@@ -51,56 +60,34 @@ void Config_GetStr(Config* self, const char* const property, char* outputString,
   }
 }
 
-int Config_GetTopicTranslation(
-  Config* self, 
-  const char* const inputKey,
-  const char* const inputString, 
-  const char* const outputKey,
-  char* outputString,
-  int outputLen)
+char* Config_GetTopicTranslation(Config* self, char* ioString)
 {
   cJSON* item = cJSON_GetObjectItem(self->configJson.json, "topic-translation");
-  int rc = 1;
 
   if ( cJSON_IsArray(item) )
   {
     int arrSize = cJSON_GetArraySize(item);
     int i = 0;
-    while ( i < arrSize && rc == 1 )
+    while ( i < arrSize )
     {
       cJSON* arrItem = cJSON_GetArrayItem(item, i);
-      char* find = Config_GetStrPtr((Config*)arrItem, inputKey);
-      char* replace = Config_GetStrPtr((Config*)arrItem, outputKey);
-      if ( find != NULL )
+      char* find = cJSON_GetStringValue(cJSON_GetObjectItem(arrItem, "telldus"));
+      char* replace = cJSON_GetStringValue(cJSON_GetObjectItem(arrItem, "mqtt"));
+      if( find != NULL )
       {
-        char* sub_string = strstr(inputString, find);
-        if ( sub_string != NULL )
+        if( ReplaceWords(ioString, find, replace) )
         {
-          // printf("Matched %s with %s\r\n", inputString, find);
-          // Copy the part before the sub_string to buffer
-          strncpy(outputString, inputString, sub_string - inputString);
-          outputLen -= (int) (sub_string - inputString);
-
-          // Null-terminate the buffer
-          outputString[sub_string - inputString] = '\0';
-
-          // Concatenate the replacement sub_string
-          strncat(outputString, replace, outputLen);
-          outputLen -= (int) strlen(replace);
-
-          // Concatenate the rest of the original string
-          strncat(outputString, sub_string + strlen(find), outputLen);
-
-          rc = 0;
-
+          // Log(TM_LOG_DEBUG, "Content2:\n%s", cJSON_Print(content));
+          return cJSON_GetStringValue(cJSON_GetObjectItem(arrItem, "name"));
         }
       }
       i++;
     }
+    Log(TM_LOG_DEBUG, "No match of translation");
   }
   else
   {
    Log(TM_LOG_ERROR, "Property topic-translation was not a found array");
   }
-  return rc;
+  return NULL;
 }
