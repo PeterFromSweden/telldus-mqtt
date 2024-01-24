@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
   }
 
   config = Config_GetInstance();
-  ASRT( !Config_Load(config, "telldus-core-mqtt.json") );
+  ASRT( !Config_Load(config, "telldus-mqtt.json") );
 
   telldusclient = TelldusClient_GetInstance();
 

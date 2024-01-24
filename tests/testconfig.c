@@ -26,7 +26,7 @@ int main(void)
 {
   config = Config_GetInstance();
   int res = 0;
-  res &= Config_Load(config, "telldus-core-mqtt.json");
+  res &= Config_Load(config, "telldus-mqtt.json");
   res &= testTranslation();
   return res;
 }
