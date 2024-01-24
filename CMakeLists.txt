@@ -1,6 +1,6 @@
 cmake_minimum_required( VERSION 3.1 )
 
-project( telldus-core-mqtt VERSION 0.0.2 LANGUAGES C )
+project( telldus-mqtt VERSION 0.0.2 LANGUAGES C )
 set( CMAKE_C_STANDARD 11 )
 
 # package find location
@@ -41,7 +41,7 @@ endif()
 target_include_directories( ${PROJECT_NAME} PRIVATE ${MOSQUITTO_INCLUDE_DIRS} ${TELLDUS_CORE_INCLUDE_DIRS} ${CJSON_INCLUDE_DIRS})
 target_link_libraries( ${PROJECT_NAME} ${MOSQUITTO_LIBRARIES} ${TELLDUS_CORE_LIBRARIES}  ${CJSON_LIBRARIES})
 
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/telldus-core-mqtt.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/telldus-mqtt.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/telldus-mqtt-homeassistant.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 # ----
