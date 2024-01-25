@@ -1,6 +1,8 @@
 #ifndef TELLDUSSENSOR_H_
 #define TELLDUSSENSOR_H_
 
+#include "mytimer.h"
+
 typedef enum {
   TM_SENSOR_CONTENT_NONE,
   TM_SENSOR_CONTENT_DATATYPE,
@@ -18,7 +20,11 @@ typedef struct {
   char unit[20];
   char state_topic[100];
   char availability[100];
+  // Dynamic part
+  MyTimer* myTimer;
   char value[10];
+  int timestamp;
+  bool online;
 } TelldusSensor;
 
 // Callbacks are static methods with context as telldusclient instance reference

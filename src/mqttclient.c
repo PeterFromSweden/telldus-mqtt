@@ -216,6 +216,22 @@ void MqttClient_AddSensor(MqttClient* self, TelldusSensor* sensor)
   ConfigJson_Destroy(&cj);
 }
 
+void MqttClient_SensorOnline(MqttClient* self, TelldusSensor* sensor, bool online)
+{
+  const char *offon[] = { "offline", "online" };
+  const char const *status = offon[online];
+
+  mosquitto_publish(
+    self->mosq, 
+    NULL, 
+    sensor->availability, 
+    strlen(status), 
+    status, 
+    0, // qos
+    false //retain
+  );
+}
+
 void MqttClient_SensorValue(MqttClient* self, TelldusSensor* sensor)
 {
   mosquitto_publish(
@@ -224,16 +240,6 @@ void MqttClient_SensorValue(MqttClient* self, TelldusSensor* sensor)
     sensor->state_topic, 
     strlen(sensor->value), 
     sensor->value, 
-    0, // qos
-    false //retain
-  );
-
-  mosquitto_publish(
-    self->mosq, 
-    NULL, 
-    sensor->availability, 
-    strlen("online"), 
-    "online", 
     0, // qos
     false //retain
   );

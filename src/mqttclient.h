@@ -27,6 +27,7 @@ int MqttClient_Connect(MqttClient *self);
 void MqttClient_Disconnect(MqttClient *self);
 void MqttClient_AddSensor(MqttClient* self, TelldusSensor* sensor);
 void MqttClient_SensorValue(MqttClient* self, TelldusSensor* sensor);
+void MqttClient_SensorOnline(MqttClient* self, TelldusSensor* sensor, bool online);
 void MqttClient_AddDevice(MqttClient* self, TelldusDevice* device);
 void MqttClient_DeviceValue(MqttClient* self, TelldusDevice* device);
 

@@ -18,8 +18,9 @@ SensorNode* sensors;
 
 static char* TelldusSensor_DataTypeToString(int dataType);
 static char* TelldusSensor_DataTypeToUnit(int dataType);
+static void myTimerCallback(MyTimer* myTimer);
 
-TelldusSensor* TelldusSensor_Create(const char *protocol, const char *model, int id, int dataType, const char *value, int timestamp)
+TelldusSensor* TelldusSensor_Create(const char *protocol, const char *model, int id, int dataType)
 {
   SensorNode* sensorNode = sensors;
   SensorNode* lastSensorPtr;
@@ -57,17 +58,19 @@ TelldusSensor* TelldusSensor_Create(const char *protocol, const char *model, int
   }
 
   // Initialize sensor
-  TelldusSensor* sensor = &newSensorListNode->sensor;
-  strcpy(sensor->protocol, protocol);
-  strcpy(sensor->model, model);
-  strcpy(sensor->id, idStr);
-  strcpy(sensor->dataType, dataTypeStr);
-  strcpy(sensor->unit, TelldusSensor_DataTypeToUnit(dataType));
+  TelldusSensor* self = &newSensorListNode->sensor;
+  strcpy(self->protocol, protocol);
+  strcpy(self->model, model);
+  strcpy(self->id, idStr);
+  strcpy(self->dataType, dataTypeStr);
+  strcpy(self->unit, TelldusSensor_DataTypeToUnit(dataType));
   //Log(TM_LOG_DEBUG, "New sensor %s", TelldusSensor_ToString(sensor, str, sizeof(str)));
   
-  MqttClient_AddSensor(MqttClient_GetInstance(), sensor);
+  self->myTimer = MyTimer_Create( myTimerCallback, (void*) self );
+
+  MqttClient_AddSensor(MqttClient_GetInstance(), self);
   
-  return sensor;
+  return self;
 }
 
 char* TelldusSensor_DataTypeToString(int dataType)
@@ -136,7 +139,31 @@ void TelldusSensor_OnEvent(const char *protocol, const char *model, int id, int 
     return;
   }
 
-  TelldusSensor* sensor = TelldusSensor_Create(protocol, model, id, dataType, value, timestamp);
-  strcpy(sensor->value, value);
-  MqttClient_SensorValue(MqttClient_GetInstance(), sensor);
+  // Find or create new sensor
+  TelldusSensor* self = TelldusSensor_Create(protocol, model, id, dataType);
+  
+  // Add value
+  strcpy(self->value, value);
+  self->timestamp = timestamp;
+
+  MqttClient_SensorValue(MqttClient_GetInstance(), self);
+  if( !self->online )
+  {
+    char buf[100];
+    Log(TM_LOG_INFO, "Sensor %s is now online", TelldusSensor_ToString(self, buf, sizeof(buf)));
+    MqttClient_SensorOnline(MqttClient_GetInstance(), self, true);
+    self->online = true;
+  }
+  MyTimer_Start( 
+    self->myTimer, 
+    Config_GetInt(Config_GetInstance(), "sensor-offline-seconds") * 1000 );
+}
+
+static void myTimerCallback(MyTimer* myTimer)
+{
+  TelldusSensor* self = (TelldusSensor*) MyTimer_GetCallbackData(myTimer);
+  char buf[100];
+  Log(TM_LOG_INFO, "Sensor %s is now offline", TelldusSensor_ToString(self, buf, sizeof(buf)));
+  MqttClient_SensorOnline(MqttClient_GetInstance(), self, false);
+  self->online = false;
 }

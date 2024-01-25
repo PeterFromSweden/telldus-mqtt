@@ -3,6 +3,7 @@
   "port": 1883,
   "user": "",
   "pass": "",
+  "sensor-offline-seconds": 600,
   "filter-non-transled": "yes",
   "topic-translation": [
     {
