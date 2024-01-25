@@ -3,6 +3,7 @@
         "mqttclient.h": "c",
         "config.h": "c",
         "configjson.h": "c",
-        "cjson.h": "c"
+        "cjson.h": "c",
+        "asrt.h": "c"
     }
 }
