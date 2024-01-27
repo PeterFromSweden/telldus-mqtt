@@ -7,12 +7,14 @@
 #include "asrt.h"
 #include "log.h"
 
+#define CBDATA (void*) 0x12345
+
 static void myTimerCallback(MyTimer* myTimer);
 static bool cbRun = false;
 
 int main(void)
 {
-  MyTimer* myTimer = MyTimer_Create(&myTimerCallback);
+  MyTimer* myTimer = MyTimer_Create(&myTimerCallback, CBDATA);
   int res = 0;
 
   MyTimer_Start(myTimer, 1000);
@@ -41,5 +43,9 @@ int main(void)
 
 static void myTimerCallback(MyTimer* myTimer)
 {
-  cbRun = true;
+  void* cbdata = MyTimer_GetCallbackData(myTimer);
+  if( cbdata == CBDATA)
+  {
+    cbRun = true;
+  }
 }
