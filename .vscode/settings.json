@@ -4,6 +4,7 @@
         "config.h": "c",
         "configjson.h": "c",
         "cjson.h": "c",
-        "asrt.h": "c"
+        "asrt.h": "c",
+        "stdbool.h": "c"
     }
 }

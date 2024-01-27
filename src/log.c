@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include <stdarg.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include "mysyslog.h"
 #include "myconsole.h"
 #include "log.h"
@@ -8,12 +8,12 @@
 static void (*log)(int loglevel, const char *fmt, va_list vlist);
 static void (*destroy)(void);
 
-void Log_Init(int destination, const char* pgmName, int uptologlevel)
+void Log_Init(int destination, const char* pgmName, int uptologlevel, bool consoletime)
 {
   switch(destination)
   {
     case TM_LOG_CONSOLE:
-    MyConsole_Init(destination, pgmName, uptologlevel);
+    MyConsole_Init(destination, pgmName, uptologlevel, consoletime);
     log = &MyConsole_Log;
     destroy = &MyConsole_Destroy;
     break;

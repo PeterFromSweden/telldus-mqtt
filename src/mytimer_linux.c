@@ -74,6 +74,7 @@ void* MyTimer_GetCallbackData(MyTimer* self)
 
 static void handler( int sig_p, siginfo_t *si_p, void *uc_p )
 {
-  MyTimer* self = (MyTimer*) si_p->_sifields._rt.si_sigval.sival_ptr;
+  //MyTimer* self = (MyTimer*) si_p->_sifields._rt.si_sigval.C;
+  MyTimer* self = (MyTimer*) si_p->si_ptr;
   self->callback( self );
 }

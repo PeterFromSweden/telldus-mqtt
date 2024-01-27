@@ -1,15 +1,17 @@
 #include <stdio.h>
-#include <stdarg.h>
 #include <time.h>
 #include "log.h"
+#include "myconsole.h"
 
 static int uptolevel = TM_LOG_ERROR;
+static bool logtime = true;
 
-void MyConsole_Init(int destination, const char* pgmName, int uptologlevel)
+void MyConsole_Init(int destination, const char* pgmName, int uptologlevel, bool time)
 {
   // destination is console, unused
   // pgmName is not printed on console since it is not shared
   uptolevel = uptologlevel;
+  logtime = time;
 }
 
 void MyConsole_Destroy(void)
@@ -35,6 +37,13 @@ void MyConsole_Log(int loglevel, const char *fmt, va_list args)
     va_end(args2);
  
     // Concatenate all buffers to output
-    printf("%s [%s]: %s\n", time_buf, Log_GetName(loglevel), buf);  
+    if( logtime )
+    {
+      printf("%s [%s]: %s\n", time_buf, Log_GetName(loglevel), buf);
+    }
+    else
+    {
+      printf("[%s]: %s\n", Log_GetName(loglevel), buf);
+    }
   }
 }

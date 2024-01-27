@@ -30,16 +30,35 @@ static int evtSensor;
 static bool connected = false;
 static CriticalSection* criticalsectionPtr;
 
+static int log_dest = TM_LOG_SYSLOG;
+static int log_level = TM_LOG_INFO;
+static bool log_time = false;
+
 int main(int argc, char *argv[])
 {
-  if( argc > 1 && strcmp(argv[1], "--nodaemon") == 0 )
+  int arg = 1;
+  while( arg < argc )
   {
-    Log_Init(TM_LOG_CONSOLE, "telldus-mqtt", TM_LOG_DEBUG);
+    if( strcmp(argv[arg], "--nodaemon") == 0 )
+    {
+      log_dest = TM_LOG_CONSOLE;
+    }
+    else if( strcmp(argv[arg], "--debug") == 0 )
+    {
+      log_level = TM_LOG_DEBUG;
+    }
+    else if( strcmp(argv[arg], "--logtime") == 0 )
+    {
+      log_time = true;
+    }
+    else
+    {
+      printf("telldus-mqtt [--nodaemon] [--debug] [--logtime]\n");
+      exit(1);
+    }
+    arg++;
   }
-  else
-  {
-    Log_Init(TM_LOG_SYSLOG, "telldus-mqtt", TM_LOG_INFO);
-  }
+  Log_Init(log_dest, "telldus-mqtt", log_level, log_time);
 
   config = Config_GetInstance();
   ASRT( !Config_Load(config, "telldus-mqtt.json") );

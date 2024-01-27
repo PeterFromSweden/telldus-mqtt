@@ -69,4 +69,5 @@ target_link_libraries( testmytimer PUBLIC -lrt )
 # ----
 
 install( TARGETS ${PROJECT_NAME} )
-
+install( FILES telldus-mqtt.json DESTINATION "${CMAKE_INSTALL_PREFIX}/etc/telldus-mqtt" )
+install( FILES telldus-mqtt-homeassistant.json DESTINATION "${CMAKE_INSTALL_PREFIX}/etc/telldus-mqtt" )

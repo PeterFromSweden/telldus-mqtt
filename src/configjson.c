@@ -42,9 +42,17 @@ int ConfigJson_LoadContent(ConfigJson* self, char* configFilename )
   FILE* f = fopen(configFilename, "rt");
   if ( !f )
   {
-    Log(TM_LOG_ERROR, "%s %s", configFilename, strerror(errno));
-    return 1;
+    char strPath[160] = "/etc/telldus-mqtt/";
+    strcat(strPath, configFilename);
+    f = fopen(strPath, "rt");
+    if ( !f )
+    {
+      Log(TM_LOG_DEBUG, "%s %s", configFilename, strerror(errno));
+      Log(TM_LOG_ERROR, "%s %s", strPath, strerror(errno));
+      return 1;
+    }
   }
+
 
   fseek(f, 0L, SEEK_END);
   self->contentLen = ftell(f);
