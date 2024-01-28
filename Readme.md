@@ -1,7 +1,48 @@
 # telldus-mqtt
-Embryo of telldus - MQTT converter
+Telldus - MQTT converter
+Home assistant compatible.
+Optional user defined MQTT topic mapping still wtih home assistant support.
 
-## Ubuntu 20.04
+# Configuration
+There are two json files:
+```bash
+/etc/telldus-mqtt/telldus-mqtt.json
+/etc/telldus-mqtt/telldus-mqtt-homeassistant.json
+```
+The home assistant topics are required to self detect telldus activity, but the default topics are very long and not mapped to its physical meaning.  
+To do this there is topic-translation that maps the home automation telldus topics to user defined topics that has a physical meaning. Additional short form name for correspondance to how sensor/device should be presented in home assistant.  
+  
+There is an alternate approach if the mqtt topics are of no interest, to just live with the long topics and add name in home assistant software instead.
+  
+## MQTT broker
+The file
+```bash
+/etc/telldus-mqtt/telldus-mqtt.json
+```
+Has host, username and password for MQTT broker that must be configured.
+
+# Build / Install
+## Openwrt install
+```bash
+opkg update
+opkg install telldus-mqtt
+```
+To test-run telldus-mqtt and check output run
+```bash
+telldus-mqtt --nodaemin --debug
+```
+To enable service  run
+```bash
+service telldus-mqtt enable
+service telldus-mqtt start
+```
+
+To check service output
+```bash
+logread | grep telldus-mqtt
+```
+
+## Ubuntu 20.04 build
 ### Install mosquitto
 ```bash
 sudo apt-add-repository ppa:mosquitto-dev/mosquitto-ppa
@@ -49,7 +90,7 @@ sudo cmake --install build
 sudo apt install libcjson-dev
 ```
 
-## Windows 11 / Visual Studio 2022
+## Windows 11 / Visual Studio 2022 - Not supported at present
 ### Install vcpkg
 https://vcpkg.io/en/getting-started.html
 ```batch
