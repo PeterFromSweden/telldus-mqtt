@@ -94,48 +94,39 @@ sudo apt install libcjson-dev
 ### Install vcpkg
 https://vcpkg.io/en/getting-started.html
 ```batch
+c:\
 git clone https://github.com/Microsoft/vcpkg.git
 vcpkg\bootstrap-vcpkg.bat
 ```
 
-### Install mosquitto prerequsity cJson
+### Install prerequsities
+(pthreads may be autoinstalled as dependancy to mosquitto?)
 ```batch
 vcpkg install cJson
-vcpkg integrate install
-```
-
-### Install mosquitto prerequsity pthreads
-```batch
 vcpkg install pthreads
+vcpkg install mosquitto
 vcpkg integrate install
 ```
-
-### Install mosquitto prerequsity openssl
-choco install openssl
-
-### Build/install mosquitto
-```batch
-git clone https://github.com/eclipse/mosquitto.git
+settings.json:  
 ```
-Open *folder* mosquitto in Visual Studio  
-Edit CMakeLists.txt:70
+"cmake.configureSettings": {
+        "CMAKE_TOOLCHAIN_FILE": "C:/vcpkg/scripts/buildsystems/vcpkg.cmake"
+    },
 ```
-	#find_package(Threads REQUIRED)
-	set (PTHREAD_LIBRARIES "C:/Users/Peter/Downloads/vcpkg/packages/pthreads_x64-windows/lib/pthreadVC3.lib")
-	set (PTHREAD_INCLUDE_DIR "C:/Users/Peter/Downloads/vcpkg/packages/pthreads_x64-windows/include")
-```
-In visual studio build and install
 
-Install locations  
-+ mosquitto/out/install
+### Mosquitto alternative
+vcpkg install above is slow and MAY have problem with threads?
+There is an installer that can be used as alternative
 
 ### Install telldus
 TelldusCenter-2.1.2.exe 
 http://download.telldus.com/TellStick/Software/TelldusCenter/TelldusCenter-2.1.2.exe  
 NOTE: Browser tricks needed nowadays to download non-https links!
 
+# Build telldus-mqtt vscode
+Cmake extension used for building and debugging.
 
-# Build telldus-mqtt
+# Build telldus-mqtt cli
 ```bash
 cd <telldus-mqtt>
 cmake -B build
@@ -147,4 +138,3 @@ Run telldus-mqtt...
 ```bash
 sudo cmake --install build
 ```
-

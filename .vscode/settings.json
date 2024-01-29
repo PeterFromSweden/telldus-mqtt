@@ -1,4 +1,14 @@
 {
+    "cmake.configureSettings": {
+        "CMAKE_TOOLCHAIN_FILE": "C:/vcpkg/scripts/buildsystems/vcpkg.cmake"
+    },
+    "cmake.debugConfig": {
+        "args": [
+            "--nodaemon",
+            "--debug"
+        ],
+        "console": "integratedTerminal"
+    },
     "files.associations": {
         "mqttclient.h": "c",
         "config.h": "c",
@@ -6,5 +16,6 @@
         "cjson.h": "c",
         "asrt.h": "c",
         "stdbool.h": "c"
-    }
+    },
+    "cmake.configureOnOpen": true
 }
