@@ -39,7 +39,16 @@ void ConfigJson_Destroy(ConfigJson* self)
 
 int ConfigJson_LoadContent(ConfigJson* self, char* configFilename )
 {
+  
+  // Linux execute
   FILE* f = fopen(configFilename, "rt");
+  if ( !f )
+  {
+    // Windows IDE execute
+    char strPath[160] = "../";
+    strcat(strPath, configFilename);
+    f = fopen(strPath, "rt");
+  }
   if ( !f )
   {
     char strPath[160] = "/etc/telldus-mqtt/";
@@ -72,8 +81,12 @@ int ConfigJson_LoadContent(ConfigJson* self, char* configFilename )
   fclose(f);
   if( readCount != self->contentLen )
   {
-    Log(TM_LOG_ERROR, "Error, read %i bytes, expected %i", readCount, self->contentLen);
-    return 1;
+    if( readCount > self->contentLen )
+    {
+      Log(TM_LOG_ERROR, "Error, read %i bytes, expected %i", readCount, self->contentLen);
+      return 1;
+    }
+    self->contentLen = readCount;
   }
   self->content[self->contentLen] = '\0';
   contentMarker(self, MARKER_CHECK);

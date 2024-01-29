@@ -9,6 +9,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
 else()
   message(FATAL_ERROR "Only Linux and Windows targets currently supported!")
 endif()
+message( STATUS "MOSQUITTO_DIR=${MOSQUITTO_DIR}" )
 list( APPEND CMAKE_PREFIX_PATH "${TELLDUS_CORE_DIR}" )
 
 find_path(

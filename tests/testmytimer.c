@@ -18,8 +18,8 @@ int main(void)
   int res = 0;
 
   MyTimer_Start(myTimer, 1000);
-
   MyThread_Sleep(500);
+
   if( cbRun == true ) res |= 1; // fail
 
   MyThread_Sleep(1000);

@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
 #include "log.h"
@@ -32,8 +33,9 @@ void MyConsole_Log(int loglevel, const char *fmt, va_list args)
     // Create a buf from fmt and args
     va_list args2;
     va_copy(args2, args);
-    char buf[1+vsnprintf(NULL, 0, fmt, args)];
-    vsnprintf(buf, sizeof buf, fmt, args2);
+    int sz = vsnprintf(NULL, 0, fmt, args);
+    char* buf = (char*) malloc(1 + sz);
+    vsnprintf(buf, 1+sz, fmt, args2);
     va_end(args2);
  
     // Concatenate all buffers to output
@@ -45,5 +47,6 @@ void MyConsole_Log(int loglevel, const char *fmt, va_list args)
     {
       printf("[%s]: %s\n", Log_GetName(loglevel), buf);
     }
+    free(buf);
   }
 }
