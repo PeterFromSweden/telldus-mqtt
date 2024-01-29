@@ -43,7 +43,7 @@ logread | grep telldus-mqtt
 ```
 
 ## Ubuntu 20.04 build
-### Install mosquitto
+### Install mosquitto 20.04
 ```bash
 sudo apt-add-repository ppa:mosquitto-dev/mosquitto-ppa
 sudo apt-get update
@@ -55,6 +55,12 @@ Install locations
 + /usr/includemosquitto.h 
 + /etc/mosquitto/
 
+### Install mosquitto 22.04
+```bash
+sudo apt install mosquitto libmosquitto-dev
+sudo apt install pkg-config libconfuse-dev libftdi-dev libcjson-dev
+```
+
 ### Build and install telldus-core
 ```bash
 git clone git@github.com:PeterFromSweden/telldus.git
@@ -62,9 +68,8 @@ cd telldus/telldus-core
 cmake -B build
 cmake --build build
 sudo cmake --install build
-
 ```
-Install locations
+Install locations -- TODO: change install prefix to /usr
 + /usr/local
 
 To fix library path (if troublesome)
