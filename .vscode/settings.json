@@ -14,5 +14,4 @@
         "asrt.h": "c",
         "stdbool.h": "c"
     },
-    "cmake.configureOnOpen": true
 }

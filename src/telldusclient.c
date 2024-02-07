@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <telldus-core.h>
 #include "log.h"
 #include "telldusdevice.h"
@@ -37,12 +38,24 @@ TelldusClient* TelldusClient_GetInstance(void)
     else if( ret < 0)
     {
       Log(TM_LOG_ERROR, "Telldus error %s", tdGetErrorString(ret));
+      exit(1);
     }
     Log(TM_LOG_DEBUG, "Telldus has %i devices", ret);
     self->deviceCount = ret;
     created = true;
   }
   return self;
+}
+
+void TelldusClient_Destroy(TelldusClient *self)
+{
+  TelldusClient_Disconnect( self );
+  tdClose();
+}
+
+void TelldusClient_SetLogRaw(TelldusClient *self, bool lograw)
+{
+  self->lograw = lograw;
 }
 
 bool TelldusClient_IsConnected(TelldusClient *self)
@@ -113,6 +126,7 @@ int TelldusClient_Connect(TelldusClient *self)
 
 void TelldusClient_Disconnect(TelldusClient *self)
 {
+  Log(TM_LOG_DEBUG, "Telldus disconnect");
   tdUnregisterCallback(self->evtController);
   tdUnregisterCallback(self->evtDeviceChange);
   tdUnregisterCallback(self->evtDevice);
@@ -213,8 +227,11 @@ static void telldusDeviceChangeEvent(int deviceId, int changeEvent, int changeTy
 static void telldusRawDeviceEvent(const char *data, int controllerId, int callbackId, void *context)
 {
   TelldusClient* self = (TelldusClient*) context;
-  //Log(TM_LOG_DEBUG, "NYI:telldusRawDeviceEvent %s, %i, %i", data, controllerId, callbackId);
-  // telldusRawDeviceEvent class :sensor; protocol:fineoffset; id : 167; model:temperaturehumidity; humidity : 44; temp:15.8; , 2, 5
+  if( self->lograw )
+  {
+    // telldusRawDeviceEvent class :sensor; protocol:fineoffset; id : 167; model:temperaturehumidity; humidity : 44; temp:15.8; , 2, 5
+    Log(TM_LOG_INFO, "telldusRawDeviceEvent %s, %i, %i", data, controllerId, callbackId);
+  }
 }
 
 static void telldusSensorEvent(const char *protocol, const char *model, int id, int dataType, const char *value, int timestamp, int callbackId, void *context)
@@ -222,105 +239,3 @@ static void telldusSensorEvent(const char *protocol, const char *model, int id, 
   TelldusClient* self = (TelldusClient*) context;
   Log(TM_LOG_DEBUG, "telldusSensorEvent %s, %s, %i, %i, %s, %i, %i", protocol, model, id, dataType, value, timestamp, callbackId);
 }
-#if 0
-static void getTelldusDevices(void)
-{
-  int nrDev = tdGetNumberOfDevices();
-  for (int i = 0; i < nrDev; i++)
-  {
-    printf("Device %i\r\n", i);
-    printf("\tid = %i\r\n", tdGetDeviceId(i));
-    printf("\ttype = %i\r\n", tdGetDeviceType(i));
-    printf("\tname = %s\r\n", tdGetName(i));
-    printf("\tprotocol = %s\r\n", tdGetProtocol(i));
-    printf("\tmodel = %s\r\n", tdGetModel(i));
-
-    const char *names[] = {"code", "fade", "house", "model", "name", "protocol", "state", "stateValue", "system", "unit", "units", ""};
-    int j = 0;
-    while (*names[j])
-    {
-      printf("\t%s=%s\r\n", names[j], tdGetDeviceParameter(i, names[j], "---"));
-      j++;
-    }
-    // char* WINAPI tdGetDeviceParameter(int intDeviceId, const char* strName, const char* defaultValue);
-  }
-}
-
-static void telldusDeviceEvent(int deviceId, int method, const char *data, int callbackId, void *context)
-{
-  printf("NYI:telldusDeviceEvent %i, %i, %s, %i\r\n", deviceId, method, data, callbackId);
-}
-
-static void telldusDeviceChangeEvent(int deviceId, int changeEvent, int changeType, int callbackId, void *context)
-{
-  printf("NYI:telldusDeviceChangeEvent %i, %i, %i, %i\r\n", deviceId, changeEvent, changeType, callbackId);
-}
-
-static void telldusRawDeviceEvent(const char *data, int controllerId, int callbackId, void *context)
-{
-  printf("NYI:telldusRawDeviceEvent %s, %i, %i\r\n", data, controllerId, callbackId);
-  // telldusRawDeviceEvent class :sensor; protocol:fineoffset; id : 167; model:temperaturehumidity; humidity : 44; temp:15.8; , 2, 5
-}
-
-static void telldusSensorEvent(const char *protocol, const char *model, int id, int dataType, const char *value, int timestamp, int callbackId, void *context)
-{
-  // printf("telldusSensorEvent %s, %s, %i, %i, %s, %i, %i\r\n", protocol, model, id, dataType, value, timestamp, callbackId);
-  if (!connected)
-  {
-    printf("telldusSensorEvent but mqtt is not connected!\r\n");
-    return;
-  }
-  char payload[20];
-  int rc;
-
-  /* Print it to a string for easy human reading - payload format is highly
-   * application dependent. */
-  snprintf(payload, sizeof(payload), "%s", value);
-
-  char dataDypeStr[20] = "NYI";
-  switch (dataType)
-  {
-  case TELLSTICK_TEMPERATURE:
-    sprintf(dataDypeStr, "temp");
-    break;
-  case TELLSTICK_HUMIDITY:
-    sprintf(dataDypeStr, "hum");
-    break;
-  }
-
-  /* Publish the message
-   * mosq - our client instance
-   * *mid = NULL - we don't want to know what the message id for this message is
-   * topic = "example/temperature" - the topic on which this message will be published
-   * payloadlen = strlen(payload) - the length of our payload in bytes
-   * payload - the actual payload
-   * qos = 2 - publish with QoS 2 for this example
-   * retain = false - do not use the retained message feature for this message
-   */
-  char telldusTopic[70];
-  snprintf(telldusTopic, sizeof(telldusTopic), "telldus/%s/%s/%i/%s", protocol, model, id, dataDypeStr);
-  char topic[70];
-  if (Config_GetTopicTranslation(&config, "telldus", telldusTopic, "mqtt", topic, sizeof(topic)))
-  {
-    // No match
-    strncpy(topic, telldusTopic, sizeof(topic));
-  }
-  CriticalSection_Enter(criticalsectionPtr);
-  rc = mosquitto_publish(mosq, NULL, topic, (int)strlen(payload), payload, 0, false);
-  if (rc != MOSQ_ERR_SUCCESS)
-  {
-
-    fprintf(stderr, "Error publishing: %s\n", mosquitto_strerror(rc));
-  }
-  else
-  {
-    // printf("Published %s = '%s'\r\n", topic, payload);
-  }
-  CriticalSection_Leave(criticalsectionPtr);
-}
-
-static void telldusControllerEvent(int controllerId, int changeEvent, int changeType, const char *newValue, int callbackId, void *context)
-{
-  printf("telldusControllerEvent %i, %i, %i, %s, %i\r\n", controllerId, changeEvent, changeType, newValue, callbackId);
-}
-#endif
