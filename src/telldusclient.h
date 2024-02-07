@@ -20,10 +20,13 @@ typedef struct
   int deviceCount;
   int lastDeviceIx;
   bool mutelog;
+  bool lograw;
   bool disconnectRequest;
 } TelldusClient;
 
 TelldusClient* TelldusClient_GetInstance(void);
+void TelldusClient_Destroy(TelldusClient *self);
+void TelldusClient_SetLogRaw(TelldusClient *self, bool lograw);
 bool TelldusClient_IsConnected(TelldusClient *self);
 int TelldusClient_Connect(TelldusClient *self);
 void TelldusClient_Disconnect(TelldusClient *self);

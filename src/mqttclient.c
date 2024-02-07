@@ -21,6 +21,7 @@ MqttClient* MqttClient_GetInstance(void)
 
   if( created == false )
   {
+    created = true;
     *self = (MqttClient) {0};
     
     // Init mosq
@@ -41,15 +42,18 @@ MqttClient* MqttClient_GetInstance(void)
     mosquitto_message_callback_set(self->mosq, on_message);
 
     self->config = Config_GetInstance();
-    created = true;
   }
   return self;
 }
 
 void MqttClient_Destroy(MqttClient* self)
 {
+  MqttClient_Disconnect( self );
+  Log(TM_LOG_DEBUG, "Mosquitto destroy.");
   mosquitto_destroy(self->mosq);
+  Log(TM_LOG_DEBUG, "Mosquitto cleanup.");
   mosquitto_lib_cleanup();
+  Log(TM_LOG_DEBUG, "Mosquitto no more");
 }
 
 TMqConn MqttClient_GetConnection(MqttClient *self)
@@ -59,6 +63,8 @@ TMqConn MqttClient_GetConnection(MqttClient *self)
 
 int MqttClient_Connect(MqttClient *self)
 {
+  self->mqconn = TM_MQCONN_START;
+
   int rc = mosquitto_username_pw_set(
     self->mosq,
     Config_GetStrPtr(self->config, "user"),
@@ -78,9 +84,10 @@ int MqttClient_Connect(MqttClient *self)
   {
     if( !self->mutelog )
     {
-      Log(TM_LOG_WARNING, "Is %s:%i a MQTT broker?", 
+      Log(TM_LOG_ERROR, "Failed to connect to MQTT broker %s:%i", 
         Config_GetStrPtr(self->config, "host"), 
         Config_GetInt(self->config, "port"));
+      exit(1);
       self->mutelog = true;
     }
     return 1;
@@ -103,45 +110,16 @@ int MqttClient_Connect(MqttClient *self)
     Log(TM_LOG_ERROR, "Error: %s", mosquitto_strerror(rc));
     return 1;
   }
-  self->mqconn = TM_MQCONN_START;
   self->mutelog = false;
 }
 
 void MqttClient_Disconnect(MqttClient *self)
 {
+  mosquitto_disconnect( self->mosq );
   Log(TM_LOG_DEBUG, "mqtt disconnect");
   self->mqconn = TM_MQCONN_NONE;
 }
 
-#if 0
-static void json_keywordexpansion(TelldusSensor* sensor, char* sernoPtr, char* buf)
-{
-  const char* wordsToReplace[] = {
-    "{datatype}", "{unit}", "{serno}", "{protocol}", "{model}", "{id}", ""
-  };
-  char* replacement[] = {
-    TelldusSensor_ItemToString(sensor, TM_SENSOR_CONTENT_DATATYPE),
-    TelldusSensor_ItemToString(sensor, TM_SENSOR_CONTENT_UNIT),
-    sernoPtr,
-    TelldusSensor_ItemToString(sensor, TM_SENSOR_CONTENT_PROTOCOL),
-    TelldusSensor_ItemToString(sensor, TM_SENSOR_CONTENT_MODEL),
-    TelldusSensor_ItemToString(sensor, TM_SENSOR_CONTENT_ID)
-  };
-  int i = 0;
-  //Log(TM_LOG_DEBUG, "json pre len=%i", strlen(buf));
-  while( *wordsToReplace[i] )
-  {
-    replaceWords(buf, wordsToReplace[i], replacement[i]);
-    int buflen = strlen(buf);
-    if( buf[buflen-1] != '}' )
-    {
-      Log(TM_LOG_ERROR, "json not ending with }");
-    }
-    i++;
-  }
-  //Log(TM_LOG_DEBUG, "json post len=%i", strlen(buf));
-}
-#endif
 
 void MqttClient_AddSensor(MqttClient* self, TelldusSensor* sensor)
 {
@@ -228,7 +206,7 @@ void MqttClient_SensorOnline(MqttClient* self, TelldusSensor* sensor, bool onlin
     strlen(status), 
     status, 
     0, // qos
-    false //retain
+    true //retain
   );
 }
 
@@ -353,6 +331,7 @@ static void on_connect(struct mosquitto* mosq, void* obj, int reason_code)
   /* You may wish to set a flag here to indicate to your application that the
    * client is now connected. */
   self->mqconn = TM_MQCONN_OK;
+  Log(TM_LOG_DEBUG, "on_connect: TM_MQCONN_OK");
 
   TelldusClient* telldusclient = TelldusClient_GetInstance();
   int deviceNo = TelldusClient_GetDeviceNo(telldusclient, TM_DEVICE_GET_FIRST);

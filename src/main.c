@@ -10,6 +10,7 @@
 #include "log.h"
 #include "config.h"
 #include "asrt.h"
+#include "version.h"
 
 
 static Config* config;
@@ -33,6 +34,11 @@ static CriticalSection* criticalsectionPtr;
 static int log_dest = TM_LOG_SYSLOG;
 static int log_level = TM_LOG_INFO;
 static bool log_time = false;
+static bool log_raw = false;
+static bool sig_exit = false;
+
+static void atexitFunction(void);
+static void signalHandler(int sig);
 
 int main(int argc, char *argv[])
 {
@@ -51,99 +57,82 @@ int main(int argc, char *argv[])
     {
       log_time = true;
     }
+    else if( strcmp(argv[arg], "--raw") == 0 )
+    {
+      log_raw = true;
+    }
     else
     {
-      printf("telldus-mqtt [--nodaemon] [--debug] [--logtime]\n");
+      printf("telldus-mqtt [--nodaemon] [--debug] [--logtime] [--raw]\n");
       exit(1);
     }
     arg++;
   }
   Log_Init(log_dest, "telldus-mqtt", log_level, log_time);
+  Log(TM_LOG_INFO, "telldus-mqtt %s", TELLDUS_MQTT_VERSION);
 
   config = Config_GetInstance();
   ASRT( !Config_Load(config, "telldus-mqtt.json") );
 
   telldusclient = TelldusClient_GetInstance();
+  TelldusClient_SetLogRaw( telldusclient, log_raw );
+  TelldusClient_Connect(telldusclient);
+  
+  mqttclient = MqttClient_GetInstance();
+  MqttClient_Connect(mqttclient);
 
-  while(1)
+  atexit(atexitFunction);
+  signal(SIGTERM, signalHandler);
+	signal(SIGINT,  signalHandler);
+	signal(SIGPIPE, signalHandler);
+	struct sigaction sa;
+	sa.sa_handler = SIG_IGN;
+	sa.sa_flags = SA_NOCLDWAIT;
+	sigemptyset(&sa.sa_mask);
+	if (sigaction(SIGCHLD, &sa, NULL) == -1) 
   {
-    if( !TelldusClient_IsConnected(telldusclient) )
-    {
-      TelldusClient_Connect(telldusclient);
-    }
-    else
-    {
-      mqttclient = MqttClient_GetInstance();
-      if( MqttClient_GetConnection(mqttclient) == TM_MQCONN_NONE )
-      {
-        MqttClient_Connect(mqttclient);
-      }
-    }
-    
+		Log(TM_LOG_ERROR, "Could not set the SA_NOCLDWAIT flag. We will be creating zombie processes!");
+    exit(1);
+	}
+  
+  while( !sig_exit )
+  {
     MyThread_Sleep(1000);
   }
 
   return 0;
+}
 
-  /* Run the network loop in a background thread, this call returns quickly. */
-  //rc = mosquitto_loop_forever(mosq, -1, 1);
-  CriticalSection_Enter(criticalsectionPtr);
-  int rc;
-  rc = mosquitto_loop_start(mosq);
-  if ( rc != MOSQ_ERR_SUCCESS ) {
-    mosquitto_destroy(mosq);
-    fprintf(stderr, "Error: %s\n", mosquitto_strerror(rc));
-    CriticalSection_Leave(criticalsectionPtr);
-    return 1;
-  }
-  CriticalSection_Leave(criticalsectionPtr);
-
-
-  /* At this point the client is connected to the network socket, but may not
- * have completed CONNECT/CONNACK.
- * It is fairly safe to start queuing messages at this point, but if you
- * want to be really sure you should wait until after a successful call to
- * the connect callback.
- * In this case we know it is 1 second before we start publishing.
- */
-  while ( !connected )
+static void signalHandler(int sig)
+{
+  switch(sig)
   {
-    MyThread_Sleep(100);
+    case SIGHUP:
+      Log(TM_LOG_WARNING, "Received SIGHUP signal.");
+      break;
+    case SIGTERM:
+      Log(TM_LOG_WARNING, "Received SIGTERM signal.");
+      break;
+    case SIGINT:
+      Log(TM_LOG_WARNING, "Received SIGINT signal.");
+      break;
   }
-  CriticalSection_Enter(criticalsectionPtr);
-  mosquitto_subscribe(mosq, NULL, "telldus/device/#", 0); // Always listen for unconfigured telldus topics
-  mosquitto_subscribe(mosq, NULL, "house/christmastree", 0);
-  /*
-  for ( int i = 1; i < 10; i++ )
+  sig_exit = true;
+}
+
+static void atexitFunction(void)
+{
+  Log(TM_LOG_DEBUG, "Atexit - Exiting");
+  if( mqttclient )
   {
-    char telldusTopic[70];
-    char mqttTopic[70];
-    snprintf(telldusTopic, sizeof(telldusTopic), "telldus/device/%i", i);
-    if ( !Config_GetTopicTranslation(&config, "telldus", telldusTopic, "mqtt", mqttTopic, sizeof(mqttTopic) - 1) )
-    {
-      // strcat(mqttTopic, "/#");
-      mosquitto_subscribe(mosq, NULL, mqttTopic, 0);
-      printf("Subscribing to %s\r\n", mqttTopic);
-    }
+    MqttClient_Destroy( mqttclient );
+    mqttclient = NULL;
   }
-  */
-  CriticalSection_Leave(criticalsectionPtr);
 
-  while ( 1 )
+  if( telldusclient )
   {
-    // Events!
-    //publish_sensor_data(mosq);
-    CriticalSection_Enter(criticalsectionPtr);
-    //mosquitto_loop(mosq, -1, 1);
-    CriticalSection_Leave(criticalsectionPtr);
-    
-    MyThread_Sleep(100);
+    TelldusClient_Destroy( telldusclient );
+    telldusclient = NULL;
   }
-
-  CriticalSection_Enter(criticalsectionPtr);
-  mosquitto_lib_cleanup();
-  CriticalSection_Leave(criticalsectionPtr);
-  CriticalSection_Destroy(criticalsectionPtr);
-
-  return 0;
+  Log(TM_LOG_DEBUG, "Atexit - Bye");
 }
