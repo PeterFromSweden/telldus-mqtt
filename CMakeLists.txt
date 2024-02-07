@@ -1,6 +1,6 @@
 cmake_minimum_required( VERSION 3.1 )
 
-project( telldus-mqtt VERSION 0.0.2 LANGUAGES C )
+project( telldus-mqtt VERSION 0.2 LANGUAGES C )
 set( CMAKE_C_STANDARD 11 )
 
 # package find location
@@ -47,9 +47,11 @@ target_include_directories( ${PROJECT_NAME} PRIVATE ${MOSQUITTO_INCLUDE_DIRS} ${
 target_link_libraries( ${PROJECT_NAME} ${MOSQUITTO_LIBRARIES} ${TELLDUS_CORE_LIBRARIES}  ${CJSON_LIBRARIES} -lrt)
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/telldus-mqtt.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/telldus-mqtt-homeassistant.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+configure_file( telldus-mqtt-homeassistant.json.in telldus-mqtt-homeassistant.json @ONLY )
+configure_file( src/version.h.in version.h @ONLY )
+target_include_directories( ${PROJECT_NAME} PRIVATE ${MOSQUITTO_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR})
 
-# ----
+# ---- TEST ----
 include( CTest )
 
 add_executable( testconfig tests/testconfig.c src/config.c src/configjson.c src/stringutils.c src/log.c src/myconsole.c )
@@ -91,8 +93,8 @@ else()
 endif()
 add_test( NAME testmytimer COMMAND testmytimer )
 target_include_directories( testmytimer PRIVATE src )
-# ----
 
+# ---- INSTALL ----
 install( TARGETS ${PROJECT_NAME} )
-install( FILES telldus-mqtt.json DESTINATION "${CMAKE_INSTALL_PREFIX}/etc/telldus-mqtt" )
-install( FILES telldus-mqtt-homeassistant.json DESTINATION "${CMAKE_INSTALL_PREFIX}/etc/telldus-mqtt" )
+install( FILES telldus-mqtt.json DESTINATION "etc/telldus-mqtt" )
+install( FILES ${CMAKE_CURRENT_BINARY_DIR}/telldus-mqtt-homeassistant.json DESTINATION "etc/telldus-mqtt" )
