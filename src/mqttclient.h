@@ -1,6 +1,7 @@
 #ifndef MQTTCLIENT_H_
 #define MQTTCLIENT_H_
 
+#include <stdbool.h>
 #include "telldussensor.h"
 #include "telldusdevice.h"
 #include "config.h"
@@ -22,7 +23,7 @@ typedef struct
 
 MqttClient* MqttClient_GetInstance(void);
 void MqttClient_Destroy(MqttClient* self);
-TMqConn MqttClient_GetConnection(MqttClient *self);
+bool MqttClient_IsConnected(MqttClient *self);
 int MqttClient_Connect(MqttClient *self);
 void MqttClient_Disconnect(MqttClient *self);
 void MqttClient_AddSensor(MqttClient* self, TelldusSensor* sensor);

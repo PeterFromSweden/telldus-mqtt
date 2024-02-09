@@ -66,17 +66,19 @@ bool TelldusClient_IsConnected(TelldusClient *self)
     TelldusClient_Disconnect(self);
     self->disconnectRequest = false;
   }
-
-  // This is a heartbeat message to see if service is still alive...
-  if( self->controllerId != TM_NO_CONTROLLER )
+  else
   {
-    char str[20];
-    int ret = tdControllerValue(self->controllerId, "available", str, sizeof(str));
-    if( ret != TELLSTICK_SUCCESS )
+    // This is a heartbeat message to see if service is still alive...
+    if( self->controllerId != TM_NO_CONTROLLER )
     {
-      // Service is down (not supported method)
-      Log(TM_LOG_ERROR, "Telldus error %s", tdGetErrorString(ret));
-      TelldusClient_Disconnect(self);
+      char str[20];
+      int ret = tdControllerValue(self->controllerId, "available", str, sizeof(str));
+      if( ret != TELLSTICK_SUCCESS )
+      {
+        // Service is down (not supported method)
+        Log(TM_LOG_ERROR, "Telldus error %s", tdGetErrorString(ret));
+        TelldusClient_Disconnect(self);
+      }
     }
   }
 

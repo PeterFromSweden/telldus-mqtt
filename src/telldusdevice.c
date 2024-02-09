@@ -172,7 +172,7 @@ void TelldusDevice_OnEvent(int deviceId, int method, const char *data, int callb
 {
   //TelldusClient* self = (TelldusClient*) context;
   Log(TM_LOG_DEBUG, "telldusDeviceEvent %i, %i, %s, %i", deviceId, method, data, callbackId);
-  if( MqttClient_GetConnection(MqttClient_GetInstance()) != TM_MQCONN_OK )
+  if( MqttClient_IsConnected(MqttClient_GetInstance()) )
   {
     Log(TM_LOG_WARNING, "telldusDeviceEvent, not connected to mqtt => ignore");
     return;
