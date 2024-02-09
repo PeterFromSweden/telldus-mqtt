@@ -12,6 +12,7 @@ static MqttClient themqttclient;
 static bool created;
 
 static void on_connect(struct mosquitto* mosq, void* obj, int reason_code);
+static void on_disconnect(struct mosquitto* mosq, void* obj, int reason_code);
 static void on_publish(struct mosquitto* mosq, void* obj, int mid);
 void on_message(struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg);
 
@@ -31,6 +32,7 @@ MqttClient* MqttClient_GetInstance(void)
     Log(TM_LOG_INFO, "Mosquitto %i.%i.%i", major, minor, revision);
 
     char* serial = TelldusClient_GetControllerSerial(TelldusClient_GetInstance());
+    ASRT( *serial != '\0' );
     self->mosq = mosquitto_new(serial, true, (void*) self);
     if ( self->mosq == NULL ) 
     {
@@ -38,6 +40,7 @@ MqttClient* MqttClient_GetInstance(void)
       exit(1);
     }
     mosquitto_connect_callback_set(self->mosq, on_connect);
+    mosquitto_disconnect_callback_set(self->mosq, on_disconnect);
     mosquitto_publish_callback_set(self->mosq, on_publish);
     mosquitto_message_callback_set(self->mosq, on_message);
 
@@ -56,9 +59,9 @@ void MqttClient_Destroy(MqttClient* self)
   Log(TM_LOG_DEBUG, "Mosquitto no more");
 }
 
-TMqConn MqttClient_GetConnection(MqttClient *self)
+bool MqttClient_IsConnected(MqttClient *self)
 {
-  return self->mqconn;
+  return !(self->mqconn == TM_MQCONN_NONE);
 }
 
 int MqttClient_Connect(MqttClient *self)
@@ -133,7 +136,7 @@ void MqttClient_AddSensor(MqttClient* self, TelldusSensor* sensor)
 
   if( self->mqconn != TM_MQCONN_OK )
   {
-    Log(TM_LOG_ERROR, "Not MQTT is not connected...");
+    Log(TM_LOG_ERROR, "MQTT is not connected => ignore");
     return;
   }
 
@@ -331,7 +334,6 @@ static void on_connect(struct mosquitto* mosq, void* obj, int reason_code)
   /* You may wish to set a flag here to indicate to your application that the
    * client is now connected. */
   self->mqconn = TM_MQCONN_OK;
-  Log(TM_LOG_DEBUG, "on_connect: TM_MQCONN_OK");
 
   TelldusClient* telldusclient = TelldusClient_GetInstance();
   int deviceNo = TelldusClient_GetDeviceNo(telldusclient, TM_DEVICE_GET_FIRST);
@@ -343,6 +345,13 @@ static void on_connect(struct mosquitto* mosq, void* obj, int reason_code)
   }
 }
 
+/* Callback called when the client receives a CONNACK message from the broker. */
+static void on_disconnect(struct mosquitto* mosq, void* obj, int reason_code)
+{
+  MqttClient* self = (MqttClient*) obj;
+  self->mqconn = TM_MQCONN_NONE;
+  Log(TM_LOG_DEBUG, "on_disconnect");
+}
 
 /* Callback called when the client knows to the best of its abilities that a
  * PUBLISH has been successfully sent. For QoS 0 this means the message has

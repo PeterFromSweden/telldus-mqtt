@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 
   telldusclient = TelldusClient_GetInstance();
   TelldusClient_SetLogRaw( telldusclient, log_raw );
-  TelldusClient_Connect(telldusclient);
+  ASRT( TelldusClient_Connect(telldusclient) == 0 );
   
   mqttclient = MqttClient_GetInstance();
   MqttClient_Connect(mqttclient);
@@ -97,10 +97,23 @@ int main(int argc, char *argv[])
   
   while( !sig_exit )
   {
+    if( !MqttClient_IsConnected( mqttclient ) )
+    {
+      Log(TM_LOG_ERROR, "MQTT is not connected");
+      sig_exit = true;
+    }
+
+    if( !TelldusClient_IsConnected( telldusclient ) )
+    {
+      Log(TM_LOG_ERROR, "Telldus is not connected");
+      sig_exit = true;
+    }
+
     MyThread_Sleep(1000);
   }
 
   return 0;
+  // atexitFunction follows
 }
 
 static void signalHandler(int sig)
@@ -116,13 +129,15 @@ static void signalHandler(int sig)
     case SIGINT:
       Log(TM_LOG_WARNING, "Received SIGINT signal.");
       break;
+    default:
+      Log(TM_LOG_ERROR, "Uknown signal received.");
+      break;
   }
   sig_exit = true;
 }
 
 static void atexitFunction(void)
 {
-  Log(TM_LOG_DEBUG, "Atexit - Exiting");
   if( mqttclient )
   {
     MqttClient_Destroy( mqttclient );
@@ -134,5 +149,4 @@ static void atexitFunction(void)
     TelldusClient_Destroy( telldusclient );
     telldusclient = NULL;
   }
-  Log(TM_LOG_DEBUG, "Atexit - Bye");
 }
