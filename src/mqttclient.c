@@ -114,6 +114,7 @@ int MqttClient_Connect(MqttClient *self)
     return 1;
   }
   self->mutelog = false;
+  return 0;
 }
 
 void MqttClient_Disconnect(MqttClient *self)
@@ -188,7 +189,7 @@ void MqttClient_AddSensor(MqttClient* self, TelldusSensor* sensor)
     self->mosq, 
     NULL, 
     topic, 
-    strlen(payload),
+    (int) strlen(payload),
     payload, 
     0, // qos
     true //retain
@@ -200,13 +201,13 @@ void MqttClient_AddSensor(MqttClient* self, TelldusSensor* sensor)
 void MqttClient_SensorOnline(MqttClient* self, TelldusSensor* sensor, bool online)
 {
   const char *offon[] = { "offline", "online" };
-  const char const *status = offon[online];
+  const char * const status = offon[online];
 
   mosquitto_publish(
     self->mosq, 
     NULL, 
     sensor->availability, 
-    strlen(status), 
+    (int) strlen(status), 
     status, 
     0, // qos
     true //retain
@@ -219,7 +220,7 @@ void MqttClient_SensorValue(MqttClient* self, TelldusSensor* sensor)
     self->mosq, 
     NULL, 
     sensor->state_topic, 
-    strlen(sensor->value), 
+    (int) strlen(sensor->value), 
     sensor->value, 
     0, // qos
     false //retain
@@ -285,7 +286,7 @@ void MqttClient_AddDevice(MqttClient* self, TelldusDevice* device)
     self->mosq, 
     NULL,
     topic,
-    strlen(payload), 
+    (int) strlen(payload), 
     payload, 
     0, // qos
     true //retain
@@ -307,7 +308,7 @@ void MqttClient_DeviceValue(MqttClient* self, TelldusDevice* device)
     self->mosq, 
     NULL, 
     device->state_topic, 
-    strlen(device->value), 
+    (int) strlen(device->value), 
     device->value, 
     0, // qos
     true //retain
