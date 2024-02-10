@@ -39,36 +39,40 @@ void ConfigJson_Destroy(ConfigJson* self)
 
 int ConfigJson_LoadContent(ConfigJson* self, char* configFilename )
 {
-  
+  char strPath[160];
+
   // Linux execute
   FILE* f = fopen(configFilename, "rt");
   if ( !f )
   {
     // Windows IDE execute
-    char strPath[160] = "../";
+    strcpy(strPath, "../");
     strcat(strPath, configFilename);
     f = fopen(strPath, "rt");
   }
-  else if ( !f )
+  
+  if ( !f )
   {
     // Windows installed execute
-    char strPath[160] = "../etc/telldus-mqtt/";
+    strcpy(strPath, "../etc/telldus-mqtt/");
     strcat(strPath, configFilename);
     f = fopen(strPath, "rt");
   }
-  else if ( !f )
+  
+  if ( !f )
   {
-    char strPath[160] = "/etc/telldus-mqtt/";
+    strcpy(strPath, "/etc/telldus-mqtt/");
     strcat(strPath, configFilename);
     f = fopen(strPath, "rt");
-    if ( !f )
-    {
-      Log(TM_LOG_DEBUG, "%s %s", configFilename, strerror(errno));
-      Log(TM_LOG_ERROR, "%s %s", strPath, strerror(errno));
-      return 1;
-    }
   }
 
+  if ( !f )
+  {
+    // Give up, report some of the paths...
+    Log(TM_LOG_DEBUG, "%s %s", configFilename, strerror(errno));
+    Log(TM_LOG_ERROR, "%s %s", strPath, strerror(errno));
+    return 1;
+  }
 
   fseek(f, 0L, SEEK_END);
   self->contentLen = ftell(f);
