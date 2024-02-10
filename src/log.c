@@ -5,7 +5,7 @@
 #include "myconsole.h"
 #include "log.h"
 
-static void (*log)(int loglevel, const char *fmt, va_list vlist);
+static void (*pLog)(int loglevel, const char *fmt, va_list vlist);
 static void (*destroy)(void);
 
 void Log_Init(int destination, const char* pgmName, int uptologlevel, bool consoletime)
@@ -14,13 +14,13 @@ void Log_Init(int destination, const char* pgmName, int uptologlevel, bool conso
   {
     case TM_LOG_CONSOLE:
     MyConsole_Init(destination, pgmName, uptologlevel, consoletime);
-    log = &MyConsole_Log;
+    pLog = &MyConsole_Log;
     destroy = &MyConsole_Destroy;
     break;
 
     case TM_LOG_SYSLOG:
     MySysLog_Init(destination, pgmName, uptologlevel);
-    log = &MySysLog_Log;
+    pLog = &MySysLog_Log;
     destroy = &MySysLog_Destroy;
     break;
 
@@ -44,9 +44,9 @@ void Log(int loglevel, const char *fmt, ...)
 {
   va_list va;
 	va_start(va, fmt);
-	if(log != NULL)
+	if(pLog != NULL)
   {
-    (*log)(loglevel, fmt, va);
+    (*pLog)(loglevel, fmt, va);
   }
 	va_end(va);
 }

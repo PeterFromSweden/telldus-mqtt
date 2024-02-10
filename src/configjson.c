@@ -49,7 +49,14 @@ int ConfigJson_LoadContent(ConfigJson* self, char* configFilename )
     strcat(strPath, configFilename);
     f = fopen(strPath, "rt");
   }
-  if ( !f )
+  else if ( !f )
+  {
+    // Windows installed execute
+    char strPath[160] = "../etc/telldus-mqtt/";
+    strcat(strPath, configFilename);
+    f = fopen(strPath, "rt");
+  }
+  else if ( !f )
   {
     char strPath[160] = "/etc/telldus-mqtt/";
     strcat(strPath, configFilename);

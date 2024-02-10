@@ -1,39 +1,48 @@
-INCLUDE( FindPackageHandleStandardArgs )
+include( FindPackageHandleStandardArgs )
 
 # Checks an environment variable; note that the first check
 # does not require the usual CMake $-sign.
-IF( DEFINED ENV{CJSON_DIR} )
-	SET( CJSON_DIR "$ENV{CJSON_DIR}" )
-ENDIF()
+if( DEFINED ENV{CJSON_DIR} )
+	set( CJSON_DIR "$ENV{CJSON_DIR}" )
+endif()
 
-FIND_PATH(
+find_path(
 		CJSON_INCLUDE_DIR
 		cjson/cJSON.h
 	HINTS
 		CJSON_DIR
 )
 
-FIND_LIBRARY( CJSON_LIBRARY
+find_library( CJSON_LIBRARY
 	NAMES cjson
 	HINTS ${CJSON_DIR}
 )
+
+if( MSVC )
+	find_file( CJSON_DLL
+		NAMES cjson.dll
+		HINTS ${CJSON_LIBRARY}/../../bin
+		)
+	message( STATUS "CJSON_DLL=${CJSON_DLL}" )
+	install( FILES ${CJSON_DLL} TYPE BIN )
+endif()
 
 FIND_PACKAGE_HANDLE_STANDARD_ARGS( cJSON DEFAULT_MSG
 	CJSON_INCLUDE_DIR CJSON_LIBRARY
 )
 
-IF( CJSON_FOUND )
-	SET( CJSON_INCLUDE_DIRS ${CJSON_INCLUDE_DIR} )
-	SET( CJSON_LIBRARIES ${CJSON_LIBRARY} )
+if( CJSON_FOUND )
+	set( CJSON_INCLUDE_DIRS ${CJSON_INCLUDE_DIR} )
+	set( CJSON_LIBRARIES ${CJSON_LIBRARY} )
 	message( STATUS "CJSON_INCLUDE_DIRS=${CJSON_INCLUDE_DIRS}" )
 	message( STATUS "CJSON_LIBRARIES=${CJSON_LIBRARIES}" )
-	MARK_AS_ADVANCED(
+	mark_as_advanced(
 		CJSON_LIBRARY
 		CJSON_INCLUDE_DIR
 		CJSON_DIR
 	)
-ELSE()
-	SET( CJSON_DIR "" CACHE STRING
+else()
+	set( CJSON_DIR "" CACHE STRING
 		"An optional hint to a directory for finding `cJSON`"
 	)
-ENDIF()
+endif()

@@ -40,11 +40,14 @@ else()
 endif()
 
 if(MSVC)
-  add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+  add_compile_definitions( _CRT_SECURE_NO_WARNINGS )
 endif()
 
 target_include_directories( ${PROJECT_NAME} PRIVATE ${MOSQUITTO_INCLUDE_DIRS} ${TELLDUS_CORE_INCLUDE_DIRS} ${CJSON_INCLUDE_DIRS})
-target_link_libraries( ${PROJECT_NAME} ${MOSQUITTO_LIBRARIES} ${TELLDUS_CORE_LIBRARIES}  ${CJSON_LIBRARIES} -lrt)
+target_link_libraries( ${PROJECT_NAME} ${MOSQUITTO_LIBRARIES} ${TELLDUS_CORE_LIBRARIES}  ${CJSON_LIBRARIES} )
+if(!MSVC)
+  target_link_libraries( -lrt )
+endif()
 target_compile_definitions( ${PROJECT_NAME} PRIVATE ASRT_LOG_ENABLE )
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/telldus-mqtt.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
