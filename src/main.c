@@ -39,6 +39,7 @@ static bool sig_exit = false;
 
 static void atexitFunction(void);
 static void signalHandler(int sig);
+static bool windowsSignalHandler(int sig);
 
 int main(int argc, char *argv[])
 {
@@ -82,6 +83,7 @@ int main(int argc, char *argv[])
   MqttClient_Connect(mqttclient);
 
   atexit(atexitFunction);
+# ifndef WIN32
   signal(SIGTERM, signalHandler);
 	signal(SIGINT,  signalHandler);
 	signal(SIGPIPE, signalHandler);
@@ -94,6 +96,9 @@ int main(int argc, char *argv[])
 		Log(TM_LOG_ERROR, "Could not set the SA_NOCLDWAIT flag. We will be creating zombie processes!");
     exit(1);
 	}
+# else
+  SetConsoleCtrlHandler( (PHANDLER_ROUTINE) windowsSignalHandler, TRUE );
+# endif
   
   while( !sig_exit )
   {
@@ -116,6 +121,7 @@ int main(int argc, char *argv[])
   // atexitFunction follows
 }
 
+#ifndef WIN32
 static void signalHandler(int sig)
 {
   switch(sig)
@@ -135,6 +141,22 @@ static void signalHandler(int sig)
   }
   sig_exit = true;
 }
+#else
+static bool windowsSignalHandler(int sig)
+{
+  if( sig == CTRL_C_EVENT )
+  {
+    Log(TM_LOG_WARNING, "Received CTRL-C event.");
+  }
+  else
+  {
+    Log(TM_LOG_WARNING, "Received %i event.", sig);
+  }
+  sig_exit = true;
+  return true;
+}
+
+#endif
 
 static void atexitFunction(void)
 {

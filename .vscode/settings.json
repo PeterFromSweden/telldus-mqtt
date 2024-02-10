@@ -1,4 +1,8 @@
 {
+    "cmake.configureSettings": {
+        "CMAKE_TOOLCHAIN_FILE": "C:/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-windows"
+    },
     "cmake.debugConfig": {
         "args": [
             "--nodaemon",
@@ -12,6 +16,7 @@
         "configjson.h": "c",
         "cjson.h": "c",
         "asrt.h": "c",
-        "stdbool.h": "c"
+        "stdbool.h": "c",
+        "log.h": "c"
     },
 }

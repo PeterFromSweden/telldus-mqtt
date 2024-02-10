@@ -95,23 +95,36 @@ sudo cmake --install build
 sudo apt install libcjson-dev
 ```
 
-## Windows 11 / Visual Studio 2022 - Not supported at present
+## Windows 11 / Visual Studio 2022
 ### Install vcpkg
 https://vcpkg.io/en/getting-started.html
 ```batch
-c:\
+c:
+cd \
 git clone https://github.com/Microsoft/vcpkg.git
-vcpkg\bootstrap-vcpkg.bat
+cd vcpkg && bootstrap-vcpkg.bat
 ```
 
-### Install prerequsities
-(pthreads may be autoinstalled as dependancy to mosquitto?)
+### Install vcpkg packages
 ```batch
 vcpkg install cJson
 vcpkg install pthreads
-vcpkg install mosquitto
 vcpkg integrate install
 ```
+
+### Mosquitto install
+Mosquitto can be installed with vcpkg but this is slow and MAY have problem with threads.
+There is an installer that can be used:
+
+https://mosquitto.org/download/
+
+### Install telldus
+TelldusCenter-2.1.2.exe  
+http://download.telldus.com/TellStick/Software/TelldusCenter/TelldusCenter-2.1.2.exe  
+NOTE: Browser tricks needed nowadays to download non-https links!
+
+# Build telldus-mqtt vscode
+Cmake extension used for building and debugging.
 settings.json:  
 ```
 "cmake.configureSettings": {
@@ -119,19 +132,7 @@ settings.json:
     },
 ```
 
-### Mosquitto alternative
-vcpkg install above is slow and MAY have problem with threads?
-There is an installer that can be used as alternative
-
-### Install telldus
-TelldusCenter-2.1.2.exe 
-http://download.telldus.com/TellStick/Software/TelldusCenter/TelldusCenter-2.1.2.exe  
-NOTE: Browser tricks needed nowadays to download non-https links!
-
-# Build telldus-mqtt vscode
-Cmake extension used for building and debugging.
-
-# Build telldus-mqtt cli
+# Build telldus-mqtt cli linux/windows
 ```bash
 cd <telldus-mqtt>
 cmake -B build
@@ -139,7 +140,9 @@ cmake --build build
 ```
 Run telldus-mqtt...
 
-### Build telldus-mqtt
+# Install telldus-mqtt
+Windows: Administrator cmd window  
+Linux: sudo
 ```bash
-sudo cmake --install build
+cmake --install build
 ```
