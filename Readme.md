@@ -27,14 +27,15 @@ Has host, username and password for MQTT broker that must be configured.
 opkg update
 opkg install telldus-mqtt
 ```
-To test-run telldus-mqtt and check output run
-```bash
-telldus-mqtt --nodaemin --debug
-```
-To enable service  run
+At install daemon is already enabled and started. Manual steps for the same.
 ```bash
 service telldus-mqtt enable
 service telldus-mqtt start
+```
+
+To test-run telldus-mqtt and check output run
+```bash
+telldus-mqtt --nodaemon --debug
 ```
 
 To check service output
@@ -42,12 +43,18 @@ To check service output
 logread | grep telldus-mqtt
 ```
 
-## Ubuntu 20.04 build
-### Install mosquitto 20.04
+To check output from remotes you can check the output with --raw flagrun
+```bash
+telldus-mqtt --nodaemon --raw
+```
+
+
+## Ubuntu build
+### Install mosquitto, ubuntu 20.04
 ```bash
 sudo apt-add-repository ppa:mosquitto-dev/mosquitto-ppa
 sudo apt-get update
-sudo apt-get install mosquitto mosquitto-dev mosquitto-clients
+sudo apt-get install mosquitto mosquitto-dev
 ```
 Install locations  
 + /usr/bin/
@@ -55,9 +62,13 @@ Install locations
 + /usr/includemosquitto.h 
 + /etc/mosquitto/
 
-### Install mosquitto 22.04
+### Install mosquitto, ubuntu 22.04
 ```bash
 sudo apt install mosquitto libmosquitto-dev
+```
+
+### Install depends if needed
+```bash
 sudo apt install pkg-config libconfuse-dev libftdi-dev libcjson-dev
 ```
 
@@ -69,6 +80,7 @@ cmake -B build
 cmake --build build
 sudo cmake --install build
 ```
+
 Install locations -- TODO: change install prefix to /usr
 + /usr/local
 
@@ -85,7 +97,7 @@ cmake --build build
 ```
 Run telldus-mqtt...
 
-### Build telldus-mqtt
+S### Install telldus-mqtt
 ```bash
 sudo cmake --install build
 ```
