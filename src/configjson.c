@@ -97,7 +97,7 @@ int ConfigJson_LoadContent(ConfigJson* self, char* configFilename )
       Log(TM_LOG_ERROR, "Error, read %i bytes, expected %i", readCount, self->contentLen);
       return 1;
     }
-    self->contentLen = readCount;
+    self->contentLen = (long) readCount;
   }
   self->content[self->contentLen] = '\0';
   contentMarker(self, MARKER_CHECK);
@@ -108,7 +108,7 @@ int ConfigJson_LoadContent(ConfigJson* self, char* configFilename )
 char* ConfigJson_CopyToContent(ConfigJson* self, char* fromString)
 {
   contentMarker(self, MARKER_CHECK);
-  int fsl = strlen(fromString );
+  int fsl = (int) strlen(fromString );
   if( fsl > self->contentMaxLen - 3 )
   {
     Log(TM_LOG_DEBUG, "CopyToContent overflow");

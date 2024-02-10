@@ -41,6 +41,8 @@ endif()
 
 if(MSVC)
   add_compile_definitions( _CRT_SECURE_NO_WARNINGS )
+  target_compile_options( ${PROJECT_NAME} PRIVATE /wd5105 ) # macro expansion producing 'defined' has undefined behavior
+  target_compile_options( ${PROJECT_NAME} PRIVATE /wd4005 ) # macro redefinition (telldus.h)
 endif()
 
 target_include_directories( ${PROJECT_NAME} PRIVATE ${MOSQUITTO_INCLUDE_DIRS} ${TELLDUS_CORE_INCLUDE_DIRS} ${CJSON_INCLUDE_DIRS})

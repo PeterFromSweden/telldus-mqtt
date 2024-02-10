@@ -105,7 +105,7 @@ int TelldusClient_Connect(TelldusClient *self)
       Log(TM_LOG_ERROR, "Telldus connect error %s", tdGetErrorString(ret));
       self->mutelog = true;
     }
-    self->controllerId != TM_NO_CONTROLLER;
+    self->controllerId = TM_NO_CONTROLLER;
     
     return -1;
   }

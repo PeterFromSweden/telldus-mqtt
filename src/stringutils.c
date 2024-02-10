@@ -5,8 +5,8 @@
 bool ReplaceWords(char *buffer, const char *find, const char *replace)
 {
   char *pos = buffer;
-  int findLen = strlen(find);
-  int replaceLen = strlen(replace);
+  int findLen = (int) strlen(find);
+  int replaceLen = (int) strlen(replace);
   bool ret = false;
 
   while ((pos = strstr(pos, find)) != NULL)
@@ -26,7 +26,7 @@ void ReplaceWordList(char* buffer, const char* const find[], const char* const r
   while( *find[i] )
   {
     ReplaceWords(buffer, find[i], replace[i]);
-    int buflen = strlen(buffer);
+    int buflen = (int) strlen(buffer);
     i++;
   }
 }
