@@ -1,0 +1,14 @@
+[
+    {
+        "name": "Visual Studio Professional 2022  VCPKG - amd64",
+        "visualStudio": "18b65d98",
+        "visualStudioArchitecture": "x64",
+        "isTrusted": true,
+        "preferredGenerator": {
+          "name": "Visual Studio 17 2022",
+          "platform": "x64",
+          "toolset": "host=x64"
+        },
+        "toolchainFile": "C:/vcpkg/scripts/buildsystems/vcpkg.cmake"
+    }
+]

@@ -1,4 +1,4 @@
-cmake_minimum_required( VERSION 3.1 )
+cmake_minimum_required( VERSION 3.5 )
 
 project( telldus-mqtt VERSION 0.2 LANGUAGES C )
 set( CMAKE_C_STANDARD 11 )
