@@ -7,10 +7,10 @@ typedef enum {
 } TDeviceContent;
 
 typedef struct {
-  int device_number; // = device_no as int
-  char device_no[5]; // = device_number as string
-  char command_topic[100];
-  char state_topic[100];
+  int device_number;       // = device_no as int
+  char device_no[5];       // = device_number as string
+  char command_topic[100]; // topic "*/set"
+  char state_topic[100];   // topic "*/state"
   char value[10];
 } TelldusDevice;
 

@@ -170,21 +170,21 @@ static char* TelldusDevice_MethodToString(int method)
 
 void TelldusDevice_OnEvent(int deviceId, int method, const char *data, int callbackId, void *context)
 {
-  //TelldusClient* self = (TelldusClient*) context;
+  //TelldusClient* telldusclient = (TelldusClient*) context;
   Log(TM_LOG_DEBUG, "telldusDeviceEvent %i, %i, %s, %i", deviceId, method, data, callbackId);
-  if( MqttClient_IsConnected(MqttClient_GetInstance()) )
+  if( !MqttClient_IsConnected(MqttClient_GetInstance()) )
   {
     Log(TM_LOG_WARNING, "telldusDeviceEvent, not connected to mqtt => ignore");
     return;
   }
 
-  TelldusDevice* device = TelldusDevice_Get(deviceId, NULL);
-  if( device == NULL )
+  TelldusDevice* self = TelldusDevice_Get(deviceId, NULL);
+  if( self == NULL )
   {
     Log(TM_LOG_ERROR, "telldusDeviceEvent, device new? => ignore");
     return;
   }
   
-  strcpy(device->value, TelldusDevice_MethodToString(method));
-  MqttClient_DeviceValue(MqttClient_GetInstance(), device);
+  strcpy(self->value, TelldusDevice_MethodToString(method));
+  MqttClient_DeviceValue(MqttClient_GetInstance(), self);
 }
