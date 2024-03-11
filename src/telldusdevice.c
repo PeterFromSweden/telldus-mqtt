@@ -18,6 +18,7 @@ DeviceNode* devices;
 
 static char* TelldusDevice_DataTypeToString(int dataType);
 static char* TelldusDevice_DataTypeToUnit(int dataType);
+static void myTimerCallback(MyTimer* myTimer);
 
 TelldusDevice* TelldusDevice_Get(int device_number, DeviceNode** lastDeviceNode)
 {
@@ -32,7 +33,7 @@ TelldusDevice* TelldusDevice_Get(int device_number, DeviceNode** lastDeviceNode)
     {
       char str[80];
       Log(TM_LOG_DEBUG, "Device %s", TelldusDevice_ToString(&deviceNode->device, str, sizeof(str)));
-      return device;
+      return device; // self found
     }
     tmpDeviceNode = deviceNode;
     deviceNode = deviceNode->next;
@@ -57,7 +58,7 @@ TelldusDevice* TelldusDevice_GetTopic(const char* topic)
     {
       char str[80];
       Log(TM_LOG_DEBUG, "Device from topic %s", TelldusDevice_ToString(&deviceNode->device, str, sizeof(str)));
-      return device;
+      return device; // self found
     }
     deviceNode = deviceNode->next;
   }
@@ -70,10 +71,10 @@ TelldusDevice* TelldusDevice_GetTopic(const char* topic)
 TelldusDevice* TelldusDevice_Create(int device_number)
 {
   DeviceNode* lastDevicePtr;
-  TelldusDevice* device = TelldusDevice_Get(device_number, &lastDevicePtr);
-  if( device != NULL )
+  TelldusDevice* self = TelldusDevice_Get(device_number, &lastDevicePtr);
+  if( self != NULL )
   {
-    return device; // Already existing device in device list
+    return self; // Already existing device in device list
   }
 
   // New device node, link into list
@@ -88,17 +89,19 @@ TelldusDevice* TelldusDevice_Create(int device_number)
   }
 
   // Initialize device
-  device = &newDeviceListNode->device;
+  self = &newDeviceListNode->device;
   char device_no[5];
   sprintf(device_no, "%i", device_number);
   
-  strcpy(device->device_no, device_no);
-  device->device_number = device_number;
+  strcpy(self->device_no, device_no);
+  self->device_number = device_number;
   char str[80];
-  Log(TM_LOG_DEBUG, "New device %s", TelldusDevice_ToString(device, str, sizeof(str)));
+  Log(TM_LOG_DEBUG, "New device %s", TelldusDevice_ToString(self, str, sizeof(str)));
   
-  //MqttClient_AddDevice(MqttClient_GetInstance(), device);
-  return device;
+  self->myTimer = MyTimer_Create( myTimerCallback, (void*) self );
+  
+  //MqttClient_AddDevice(MqttClient_GetInstance(), self);
+  return self;
 }
 
 
@@ -135,15 +138,25 @@ static bool compareStringsIgnoreCase(const char *str1, const char *str2)
 
 void TelldusDevice_Action(TelldusDevice* self, const char* action)
 {
+  if( compareStringsIgnoreCase(action, self->lastAction) )
+  {
+    Log(TM_LOG_DEBUG, "Action %s already sent to device %i => resending", action, self->device_number);
+  }
+  else
+  {
+    Log(TM_LOG_DEBUG, "Turn %s device %i", action, self->device_number);
+    strcpy(self->lastAction, action);
+    // Schedule repetition
+    MyTimer_Start(self->myTimer, 1000);
+  }
+
   if( compareStringsIgnoreCase(action, "on" ) )
   {
     tdTurnOn(self->device_number);
-    Log(TM_LOG_DEBUG, "Turn on on device %i", self->device_number);
   }
   else if( compareStringsIgnoreCase(action, "off" ) )
   {
     tdTurnOff(self->device_number);
-    Log(TM_LOG_DEBUG, "Turn off on device %i", self->device_number);
   }
   else
   {
@@ -181,10 +194,16 @@ void TelldusDevice_OnEvent(int deviceId, int method, const char *data, int callb
   TelldusDevice* self = TelldusDevice_Get(deviceId, NULL);
   if( self == NULL )
   {
-    Log(TM_LOG_ERROR, "telldusDeviceEvent, device new? => ignore");
+    Log(TM_LOG_ERROR, "telldusDeviceEvent, self new? => ignore");
     return;
   }
   
   strcpy(self->value, TelldusDevice_MethodToString(method));
   MqttClient_DeviceValue(MqttClient_GetInstance(), self);
+}
+
+static void myTimerCallback(MyTimer* myTimer)
+{
+  TelldusDevice* self = (TelldusDevice*) MyTimer_GetCallbackData(myTimer);
+  TelldusDevice_Action(self, self->lastAction); // Resend last action
 }

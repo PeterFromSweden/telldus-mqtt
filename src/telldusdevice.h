@@ -1,6 +1,8 @@
 #ifndef TELLDUSDEVICE_H_
 #define TELLDUSDEVICE_H_
 
+#include "mytimer.h"
+
 typedef enum {
   TM_DEVICE_CONTENT_NONE,
   TM_DEVICE_CONTENT_DEVICENO,
@@ -11,7 +13,9 @@ typedef struct {
   char device_no[5];       // = device_number as string
   char command_topic[100]; // topic "*/set"
   char state_topic[100];   // topic "*/state"
-  char value[10];
+  char value[10];          // value as received from telldusd
+  char lastAction[10];     // last action sent to telldusd
+  MyTimer* myTimer;        // Resend timer
 } TelldusDevice;
 
 TelldusDevice* TelldusDevice_Create(int deviceNo);
