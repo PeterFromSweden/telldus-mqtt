@@ -1,7 +1,22 @@
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #include "stringutils.h"
 
+static bool isDelimiter(char c) 
+{
+  return isspace(c) || strchr(",.;:?!()\"'-_+=/\\*%&$€£¥@#~^`|<>=", c) != NULL;
+}
+
+// Replace all occurrences of find with replace in buffer
+// Returns true if any replacement was made
+// Only complete words are replaced, delimiter is 
+// space, tab, newline, comma, semicolon, colon, period, 
+// question mark, exclamation mark, parenthesis, quotation mark, 
+// apostrophe, hyphen, underscore, plus, minus, equal, slash, 
+//backslash, asterisk, percent, ampersand, dollar, euro, pound, 
+// yen, at, hash, tilde, circumflex, grave, vertical bar, less than, 
+// greater than, and equal sign
 bool ReplaceWords(char *buffer, const char *find, const char *replace)
 {
   char *pos = buffer;
@@ -11,10 +26,19 @@ bool ReplaceWords(char *buffer, const char *find, const char *replace)
 
   while ((pos = strstr(pos, find)) != NULL)
   {
-    memmove(pos + replaceLen, pos + findLen, strlen(pos + findLen) + 1);
-    memcpy(pos, replace, replaceLen);
-    pos += replaceLen;
-    ret = true;
+    // Check for word boundaries
+    if ((pos == buffer || isDelimiter(*(pos - 1))) && 
+        (pos[findLen] == '\0' || isDelimiter(pos[findLen])))
+    {
+      memmove(pos + replaceLen, pos + findLen, strlen(pos + findLen) + 1);
+      memcpy(pos, replace, replaceLen);
+      pos += replaceLen;
+      ret = true;
+    }
+    else
+    {
+      pos += findLen;
+    }
   }
 
   return ret;
