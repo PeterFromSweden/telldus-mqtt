@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh
 # Every hour setup below:
 # echo '0 * * * * /usr/bin/telldus-mqtt-watchdog.sh' >> /etc/crontabs/root
 
