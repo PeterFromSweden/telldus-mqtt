@@ -97,7 +97,7 @@ cmake --build build
 ```
 Run telldus-mqtt...
 
-S### Install telldus-mqtt
+### Install telldus-mqtt
 ```bash
 sudo cmake --install build
 ```
