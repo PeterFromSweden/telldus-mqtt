@@ -43,7 +43,7 @@ TelldusDevice* TelldusDevice_Get(int device_number, DeviceNode** lastDeviceNode)
   {
     *lastDeviceNode = tmpDeviceNode;
   }
-  return &deviceNode->device;
+  return NULL;
 }
 
 TelldusDevice* TelldusDevice_GetTopic(const char* topic)
@@ -90,10 +90,7 @@ TelldusDevice* TelldusDevice_Create(int device_number)
 
   // Initialize device
   self = &newDeviceListNode->device;
-  char device_no[5];
-  sprintf(device_no, "%i", device_number);
-  
-  strcpy(self->device_no, device_no);
+  snprintf(self->device_no, sizeof(self->device_no), "%i", device_number);
   self->device_number = device_number;
   char str[80];
   Log(TM_LOG_DEBUG, "New device %s", TelldusDevice_ToString(self, str, sizeof(str)));
@@ -138,6 +135,12 @@ static bool compareStringsIgnoreCase(const char *str1, const char *str2)
 
 void TelldusDevice_Action(TelldusDevice* self, const char* action)
 {
+  if( action == NULL )
+  {
+    Log(TM_LOG_WARNING, "Empty action on device %i => ignore", self->device_number);
+    return;
+  }
+
   if( compareStringsIgnoreCase(action, self->lastAction) )
   {
     Log(TM_LOG_DEBUG, "Action %s already sent to device %i => resending", action, self->device_number);
@@ -145,7 +148,7 @@ void TelldusDevice_Action(TelldusDevice* self, const char* action)
   else
   {
     Log(TM_LOG_DEBUG, "Turn %s device %i", action, self->device_number);
-    strcpy(self->lastAction, action);
+    snprintf(self->lastAction, sizeof(self->lastAction), "%s", action);
     // Schedule repetition
     MyTimer_Start(self->myTimer, 1000);
   }
@@ -198,7 +201,7 @@ void TelldusDevice_OnEvent(int deviceId, int method, const char *data, int callb
     return;
   }
   
-  strcpy(self->value, TelldusDevice_MethodToString(method));
+  snprintf(self->value, sizeof(self->value), "%s", TelldusDevice_MethodToString(method));
   MqttClient_DeviceValue(MqttClient_GetInstance(), self);
 }
 

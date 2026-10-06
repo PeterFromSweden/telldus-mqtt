@@ -56,6 +56,8 @@ cmake -B build && cmake --build build && sudo cmake --install build
 ```
 If the library is not found: `export LD_LIBRARY_PATH=/usr/local/lib`.
 
+Or run `scripts/setup-linux-deps.sh` to install all of the dependencies above. Run the tests with `cd build && ctest`. The tests use a simulated TellStick, so no hardware is needed.
+
 ### Windows 11
 1. Install [vcpkg](https://vcpkg.io/en/getting-started.html), then `vcpkg install cJson pthreads && vcpkg integrate install`.
 2. Install [Mosquitto](https://mosquitto.org/download/) and [TelldusCenter 2.1.2](http://download.telldus.com/TellStick/Software/TelldusCenter/TelldusCenter-2.1.2.exe).

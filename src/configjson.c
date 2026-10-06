@@ -29,6 +29,7 @@ void ConfigJson_Init(ConfigJson* self)
 void ConfigJson_FreeJson(ConfigJson* self)
 {
   cJSON_Delete( self->json );
+  self->json = NULL;
 }
 
 void ConfigJson_Destroy(ConfigJson* self)
@@ -78,14 +79,14 @@ int ConfigJson_LoadContent(ConfigJson* self, char* configFilename )
   self->contentLen = ftell(f);
   self->contentMaxLen = self->contentLen + 200;
   self->content = malloc(self->contentMaxLen);
-  memset(self->content, 0xdd, self->contentMaxLen);
-  contentMarker(self, MARKER_SET);
   if ( self->content == NULL )
   {
     Log(TM_LOG_ERROR, "Error %s", strerror(errno));
     fclose(f);
     return 1;
   }
+  memset(self->content, 0xdd, self->contentMaxLen);
+  contentMarker(self, MARKER_SET);
 
   fseek(f, 0L, SEEK_SET);
   size_t readCount = fread(self->content, 1, self->contentLen, f);
@@ -204,6 +205,7 @@ char* ConfigJson_GetStringFromPropList(
   if( !cJSON_IsString( item ) )
   {
     Log(TM_LOG_ERROR, "Json property is not a string!");
+    return NULL;
   }
 
   return item->valuestring;
@@ -279,6 +281,7 @@ int ConfigJson_GetIntFromPropList(
   if( !cJSON_IsNumber( item ) )
   {
     Log(TM_LOG_ERROR, "Json property is not a number!");
+    return 0;
   }
 
   return item->valueint;
