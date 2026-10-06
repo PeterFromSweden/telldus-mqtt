@@ -39,6 +39,20 @@ int test2(void)
 
   return res;
 }
+// Architecture review issue #4: "Device-1" must not match inside "Device-10".
+int test3(void)
+{
+  char buffer[100] = "homeassistant/light/Device-10/config homeassistant/light/Device-1/config";
+  ReplaceWordList(buffer,
+    (const char * const []) {
+      "Device-1", ""
+      },
+    (const char * const []) {
+      "lamp_bedroom"
+      });
+  return strcmp( buffer, "homeassistant/light/Device-10/config homeassistant/light/lamp_bedroom/config");
+}
+
 int main(void)
 {
   int res = 0;
@@ -50,6 +64,12 @@ int main(void)
   }
   
   res = test2();
+  if( res != 0 )
+  {
+    return res;
+  }
+
+  res = test3();
   if( res != 0 )
   {
     return res;

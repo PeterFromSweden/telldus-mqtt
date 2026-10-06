@@ -12,6 +12,11 @@
 static MqttClient themqttclient;
 static bool created;
 
+static void copyString(char* dest, size_t destSize, const char* src)
+{
+  snprintf(dest, destSize, "%s", src != NULL ? src : "");
+}
+
 static void on_connect(struct mosquitto* mosq, void* obj, int reason_code);
 static void on_disconnect(struct mosquitto* mosq, void* obj, int reason_code);
 static void on_publish(struct mosquitto* mosq, void* obj, int mid);
@@ -20,7 +25,7 @@ void on_message(struct mosquitto* mosq, void* obj, const struct mosquitto_messag
 // Delete a retained topic published before a topic-translation was added.
 static void clearMovedTopic(MqttClient* self, const char* defaultTopic, const char* topic)
 {
-  if( strcmp(defaultTopic, topic) != 0 )
+  if( *defaultTopic != '\0' && strcmp(defaultTopic, topic) != 0 )
   {
     Log(TM_LOG_DEBUG, "Clear retained default topic %s", defaultTopic);
     mosquitto_publish(self->mosq, NULL, defaultTopic, 0, NULL, 0, true);
@@ -84,7 +89,7 @@ int MqttClient_Connect(MqttClient *self)
     Config_GetStrPtr(self->config, "user"),
     Config_GetStrPtr(self->config, "pass"));
   if ( rc != MOSQ_ERR_SUCCESS ) {
-    mosquitto_destroy(self->mosq);
+    self->mqconn = TM_MQCONN_NONE;
     Log(TM_LOG_ERROR, "Error: %s", mosquitto_strerror(rc));
     return 1;
   }
@@ -104,11 +109,12 @@ int MqttClient_Connect(MqttClient *self)
       exit(1);
       self->mutelog = true;
     }
+    self->mqconn = TM_MQCONN_NONE;
     return 1;
   }
   if ( rc != MOSQ_ERR_SUCCESS ) 
   {
-    mosquitto_destroy(self->mosq);
+    self->mqconn = TM_MQCONN_NONE;
     if( !self->mutelog )
     {
       Log(TM_LOG_ERROR, "Error: %s", mosquitto_strerror(rc));
@@ -120,7 +126,7 @@ int MqttClient_Connect(MqttClient *self)
   rc = mosquitto_loop_start(self->mosq);
   if ( rc != MOSQ_ERR_SUCCESS ) 
   {
-    mosquitto_destroy(self->mosq);
+    self->mqconn = TM_MQCONN_NONE;
     Log(TM_LOG_ERROR, "Error: %s", mosquitto_strerror(rc));
     return 1;
   }
@@ -173,9 +179,9 @@ void MqttClient_AddSensor(MqttClient* self, TelldusSensor* sensor)
   char defaultConfigTopic[160];
   char defaultAvailability[100];
   ConfigJson_ParseContent(&cj);
-  snprintf(defaultConfigTopic, sizeof(defaultConfigTopic), "%s", ConfigJson_GetStringFromPropList(&cj, 
+  copyString(defaultConfigTopic, sizeof(defaultConfigTopic), ConfigJson_GetStringFromPropList(&cj, 
     (const char * const []) {"sensor-config", "topic", ""}));
-  snprintf(defaultAvailability, sizeof(defaultAvailability), "%s", ConfigJson_GetStringFromPropList(&cj, 
+  copyString(defaultAvailability, sizeof(defaultAvailability), ConfigJson_GetStringFromPropList(&cj, 
     (const char * const []) {"sensor-config-content", "availability", "topic", ""}));
   ConfigJson_FreeJson(&cj);
 
@@ -197,14 +203,21 @@ void MqttClient_AddSensor(MqttClient* self, TelldusSensor* sensor)
   }
 
   //Log(TM_LOG_DEBUG, "%s", ConfigJson_GetStrPtr(&cjTopic, "topic"));
-  strcpy(sensor->state_topic, ConfigJson_GetStringFromPropList(&cj, 
+  copyString(sensor->state_topic, sizeof(sensor->state_topic), ConfigJson_GetStringFromPropList(&cj, 
     (const char * const []) {"sensor-config-content", "state_topic", ""}));
-  strcpy(sensor->availability,  ConfigJson_GetStringFromPropList(&cj, 
+  copyString(sensor->availability, sizeof(sensor->availability), ConfigJson_GetStringFromPropList(&cj, 
     (const char * const []) {"sensor-config-content", "availability", "topic", ""}));
 
   char* topic = ConfigJson_GetStringFromPropList(&cj, 
       (const char * const []) {"sensor-config", "topic", ""});
   char* payload = ConfigJson_GetJsonFromProp(&cj, "sensor-config-content");
+  if( topic == NULL || payload == NULL )
+  {
+    Log(TM_LOG_ERROR, "sensor config missing in telldus-mqtt-homeassistant.json");
+    cJSON_free(payload);
+    ConfigJson_Destroy(&cj);
+    return;
+  }
   clearMovedTopic(self, defaultConfigTopic, topic);
   clearMovedTopic(self, defaultAvailability, sensor->availability);
   mosquitto_publish(
@@ -216,6 +229,7 @@ void MqttClient_AddSensor(MqttClient* self, TelldusSensor* sensor)
     0, // qos
     true //retain
   );
+  cJSON_free(payload);
   
   ConfigJson_Destroy(&cj);
 }
@@ -282,9 +296,9 @@ void MqttClient_AddDevice(MqttClient* self, TelldusDevice* device)
   char defaultConfigTopic[160];
   char defaultStateTopic[100];
   ConfigJson_ParseContent(&cj);
-  snprintf(defaultConfigTopic, sizeof(defaultConfigTopic), "%s", ConfigJson_GetStringFromPropList(&cj, 
+  copyString(defaultConfigTopic, sizeof(defaultConfigTopic), ConfigJson_GetStringFromPropList(&cj, 
     (const char * const []) {"device-config", "topic", ""}));
-  snprintf(defaultStateTopic, sizeof(defaultStateTopic), "%s", ConfigJson_GetStringFromPropList(&cj, 
+  copyString(defaultStateTopic, sizeof(defaultStateTopic), ConfigJson_GetStringFromPropList(&cj, 
     (const char * const []) {"device-config-content", "state_topic", ""}));
   ConfigJson_FreeJson(&cj);
 
@@ -306,14 +320,21 @@ void MqttClient_AddDevice(MqttClient* self, TelldusDevice* device)
   }
   
   //Log(TM_LOG_DEBUG, "%s", ConfigJson_GetStrPtr(&cjTopic, "topic"));
-  strcpy(device->state_topic, ConfigJson_GetStringFromPropList(&cj, 
+  copyString(device->state_topic, sizeof(device->state_topic), ConfigJson_GetStringFromPropList(&cj, 
           (const char * const []) {"device-config-content", "state_topic", ""}));
-  strcpy(device->command_topic, ConfigJson_GetStringFromPropList(&cj, 
+  copyString(device->command_topic, sizeof(device->command_topic), ConfigJson_GetStringFromPropList(&cj, 
           (const char * const []) {"device-config-content", "command_topic", ""}));
 
   char* topic = ConfigJson_GetStringFromPropList(&cj, 
       (const char * const []) {"device-config", "topic", ""});
   char* payload = ConfigJson_GetJsonFromProp(&cj, "device-config-content");
+  if( topic == NULL || payload == NULL )
+  {
+    Log(TM_LOG_ERROR, "device config missing in telldus-mqtt-homeassistant.json");
+    cJSON_free(payload);
+    ConfigJson_Destroy(&cj);
+    return;
+  }
   clearMovedTopic(self, defaultConfigTopic, topic);
   clearMovedTopic(self, defaultStateTopic, device->state_topic);
   mosquitto_publish(
@@ -325,6 +346,7 @@ void MqttClient_AddDevice(MqttClient* self, TelldusDevice* device)
     0, // qos
     true //retain
   );
+  cJSON_free(payload);
   
   mosquitto_subscribe(
     self->mosq,
@@ -403,6 +425,11 @@ static void on_publish(struct mosquitto* mosq, void* obj, int mid)
 void on_message(struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg)
 {
   MqttClient* self = (MqttClient*) obj;
+  if( msg->payload == NULL || msg->payloadlen == 0 )
+  {
+    Log(TM_LOG_DEBUG, "mqtt message %s with empty payload => ignore", msg->topic);
+    return;
+  }
   Log(TM_LOG_DEBUG, "mqtt message %s %s (%d)", msg->topic, (const char*)msg->payload, msg->payloadlen);
 
   TelldusClient* telldusclient = TelldusClient_GetInstance();
