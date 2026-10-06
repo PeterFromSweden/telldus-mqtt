@@ -85,6 +85,42 @@ static bool waitFor(const char* topic, const char* needle)
   return false;
 }
 
+// Wait for a message with empty payload on topic, i.e. a cleared retained topic
+static bool waitForCleared(const char* topic)
+{
+  for( int t = 0; t < 50; t++ )
+  {
+    pthread_mutex_lock(&msgLock);
+    for( int i = 0; i < messageCount; i++ )
+    {
+      if( strcmp(messages[i].topic, topic) == 0 && messages[i].payload[0] == '\0' )
+      {
+        pthread_mutex_unlock(&msgLock);
+        return true;
+      }
+    }
+    pthread_mutex_unlock(&msgLock);
+    MyThread_Sleep(100);
+  }
+  printf("Timeout waiting for %s to be cleared\n", topic);
+  return false;
+}
+
+static bool wasCleared(const char* topic)
+{
+  bool cleared = false;
+  pthread_mutex_lock(&msgLock);
+  for( int i = 0; i < messageCount; i++ )
+  {
+    if( strcmp(messages[i].topic, topic) == 0 && messages[i].payload[0] == '\0' )
+    {
+      cleared = true;
+    }
+  }
+  pthread_mutex_unlock(&msgLock);
+  return cleared;
+}
+
 static void dumpMessages(void)
 {
   pthread_mutex_lock(&msgLock);
@@ -131,6 +167,11 @@ static bool writeConfig(const char* filename, int port)
     "      \"telldus\": \"telldus/" SERIAL "/sensor/fineoffset_temperaturehumidity_135\",\n"
     "      \"mqtt\": \"Home/Shed\",\n"
     "      \"name\": \"Shed\"\n"
+    "    },\n"
+    "    {\n"
+    "      \"telldus\": \"telldus/" SERIAL "/switch/2\",\n"
+    "      \"mqtt\": \"Home/Lamp\",\n"
+    "      \"name\": \"Lamp\"\n"
     "    }\n"
     "  ]\n"
     "}\n", port);
@@ -194,6 +235,12 @@ int main(int argc, char* argv[])
   TelldusSim_Reset();
   TelldusSim_SetController(5, TELLSTICK_CONTROLLER_TELLSTICK_DUO, SERIAL, true);
   TelldusSim_AddDevice(1);
+  TelldusSim_AddDevice(2);
+
+  // Retained topics left from before the translations were added (issue #6)
+  mosquitto_publish(observer, NULL, "telldus/" SERIAL "/sensor/fineoffset_temperaturehumidity_135/status", 6, "online", 0, true);
+  mosquitto_publish(observer, NULL, "telldus/" SERIAL "/switch/2/state", 2, "ON", 0, true);
+  CHECK( waitFor("telldus/" SERIAL "/switch/2/state", "ON") );
 
   CHECK( Config_Load(Config_GetInstance(), configFile) == 0 );
   TelldusClient* telldusclient = TelldusClient_GetInstance();
@@ -205,6 +252,12 @@ int main(int argc, char* argv[])
   CHECK( waitFor("homeassistant/switch/" SERIAL "_device_1/config",
                  "\"command_topic\":\t\"telldus/" SERIAL "/switch/1/set\"") );
 
+  // A translated device clears its old default retained state topic
+  CHECK( waitFor("homeassistant/switch/" SERIAL "_device_2/config",
+                 "\"command_topic\":\t\"Home/Lamp/set\"") );
+  CHECK( waitForCleared("telldus/" SERIAL "/switch/2/state") );
+  CHECK( !wasCleared("telldus/" SERIAL "/switch/1/state") );
+
   // A sensor without translation gets the default topics
   TelldusSim_SensorEvent("fineoffset", "temperaturehumidity", 77, TELLSTICK_HUMIDITY, "55");
   CHECK( waitFor("homeassistant/sensor/" SERIAL "_fineoffset_temperaturehumidity_77_Humidity/config", NULL) );
@@ -215,6 +268,9 @@ int main(int argc, char* argv[])
   TelldusSim_SensorEvent("fineoffset", "temperaturehumidity", 135, TELLSTICK_TEMPERATURE, "21.5");
   CHECK( waitFor("Home/Shed/Temperature", "21.5") );
   CHECK( waitFor("Home/Shed/status", "online") );
+  CHECK( waitForCleared("telldus/" SERIAL "/sensor/fineoffset_temperaturehumidity_135/status") );
+  CHECK( !wasCleared("telldus/" SERIAL "/sensor/fineoffset_temperaturehumidity_77/status") );
+  CHECK( !wasCleared("homeassistant/sensor/" SERIAL "_fineoffset_temperaturehumidity_135_Temperature/config") );
 
   // Home Assistant switches the device on: TellStick sends, state is reported back
   mosquitto_publish(observer, NULL, "telldus/" SERIAL "/switch/1/set", 2, "ON", 0, false);
