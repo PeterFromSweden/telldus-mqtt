@@ -1,160 +1,64 @@
 # telldus-mqtt
-Telldus - MQTT converter
-Home assistant compatible.
-Optional user defined MQTT topic mapping still wtih home assistant support.
+Bridge between Telldus 433 MHz devices and MQTT, with Home Assistant MQTT Discovery.
 
-# Configuration
-There are two json files:
+- Requires a TellStick (e.g. TellStick Duo) and telldus-core (`telldusd`).
+- Sensors (temperature, humidity, rain, wind) are published automatically.
+- Switches support on/off only and must be defined in telldus-core (`tellstick.conf`).
+
+## MQTT topics
+| | Topic |
+|---|---|
+| Sensor value | `telldus/{serno}/sensor/{protocol}_{model}_{id}/{datatype}` |
+| Switch state | `telldus/{serno}/switch/{device_no}/state` |
+| Switch command | `telldus/{serno}/switch/{device_no}/set` (`ON`/`OFF`) |
+
+## Configuration
+`/etc/telldus-mqtt/telldus-mqtt.json`:
+```json
+{
+  "host": "127.0.0.1",
+  "port": 1883,
+  "user": "",
+  "pass": "",
+  "sensor-offline-seconds": 600,
+  "topic-translation": [
+    { "telldus": "telldus/A703AKOX/switch/2", "mqtt": "Home/Office", "name": "Office" }
+  ]
+}
+```
+- `sensor-offline-seconds`: a sensor is marked offline when silent this long.
+- `topic-translation` (optional): replaces the long topics with your own; `name` is the Home Assistant name.
+
+`/etc/telldus-mqtt/telldus-mqtt-homeassistant.json` holds the discovery templates and normally needs no changes.
+
+## Run
 ```bash
-/etc/telldus-mqtt/telldus-mqtt.json
-/etc/telldus-mqtt/telldus-mqtt-homeassistant.json
+telldus-mqtt [--nodaemon] [--debug] [--logtime] [--raw]
 ```
-The home assistant topics are required to self detect telldus activity, but the default topics are very long and not mapped to its physical meaning.  
-To do this there is topic-translation that maps the home automation telldus topics to user defined topics that has a physical meaning. Additional short form name for correspondance to how sensor/device should be presented in home assistant.  
-  
-There is an alternate approach if the mqtt topics are of no interest, to just live with the long topics and add name in home assistant software instead.
-  
-## MQTT broker
-The file
+`--raw` logs raw RF messages, useful for finding remote controls.
+
+## Install
+### OpenWrt
 ```bash
-/etc/telldus-mqtt/telldus-mqtt.json
+opkg update && opkg install telldus-mqtt
 ```
-Has host, username and password for MQTT broker that must be configured.
+The service starts right away. Logs: `logread | grep telldus-mqtt`.
 
-# Build / Install
-## Openwrt install
+### Linux (Ubuntu 22.04+)
 ```bash
-opkg update
-opkg install telldus-mqtt
+sudo apt install mosquitto libmosquitto-dev pkg-config libconfuse-dev libftdi-dev libcjson-dev
+
+git clone https://github.com/PeterFromSweden/telldus.git
+cmake -S telldus/telldus-core -B telldus/build
+cmake --build telldus/build && sudo cmake --install telldus/build   # installs to /usr/local
+
+cmake -B build && cmake --build build && sudo cmake --install build
 ```
-At install daemon is already enabled and started. Manual steps for the same.
-```bash
-service telldus-mqtt enable
-service telldus-mqtt start
-```
+If the library is not found: `export LD_LIBRARY_PATH=/usr/local/lib`.
 
-To test-run telldus-mqtt and check output run
-```bash
-telldus-mqtt --nodaemon --debug
-```
+Or run `scripts/setup-linux-deps.sh` to install all of the dependencies above. Run the tests with `cd build && ctest`. The tests use a simulated TellStick, so no hardware is needed.
 
-To check service output
-```bash
-logread | grep telldus-mqtt
-```
-
-To check output from remotes you can check the output with --raw flagrun
-```bash
-telldus-mqtt --nodaemon --raw
-```
-
-
-## Ubuntu build
-### Install mosquitto, ubuntu 20.04
-```bash
-sudo apt-add-repository ppa:mosquitto-dev/mosquitto-ppa
-sudo apt-get update
-sudo apt-get install mosquitto mosquitto-dev
-```
-Install locations  
-+ /usr/bin/
-+ /usr/sbin/
-+ /usr/includemosquitto.h 
-+ /etc/mosquitto/
-
-### Install mosquitto, ubuntu 22.04
-```bash
-sudo apt install mosquitto libmosquitto-dev
-```
-
-### Install depends if needed
-```bash
-sudo apt install pkg-config libconfuse-dev libftdi-dev libcjson-dev
-```
-
-### Build and install telldus-core
-```bash
-git clone git@github.com:PeterFromSweden/telldus.git
-cd telldus/telldus-core
-cmake -B build
-cmake --build build
-sudo cmake --install build
-```
-
-Install locations -- TODO: change install prefix to /usr
-+ /usr/local
-
-To fix library path (if troublesome)
-```bash
-export LD_LIBRARY_PATH=/usr/local/lib
-```
-
-### Build telldus-mqtt
-```bash
-cd <telldus-mqtt>
-cmake -B build
-cmake --build build
-```
-Run telldus-mqtt...
-
-### Install telldus-mqtt
-```bash
-sudo cmake --install build
-```
-
-### Install cJson
-```bash
-sudo apt install libcjson-dev
-```
-
-## Windows 11 / Visual Studio 2022
-### Install vcpkg
-https://vcpkg.io/en/getting-started.html
-```batch
-c:
-cd \
-git clone https://github.com/Microsoft/vcpkg.git
-cd vcpkg && bootstrap-vcpkg.bat
-```
-
-### Install vcpkg packages
-```batch
-vcpkg install cJson
-vcpkg install pthreads
-vcpkg integrate install
-```
-
-### Mosquitto install
-Mosquitto can be installed with vcpkg but this is slow and MAY have problem with threads.
-There is an installer that can be used:
-
-https://mosquitto.org/download/
-
-### Install telldus
-TelldusCenter-2.1.2.exe  
-http://download.telldus.com/TellStick/Software/TelldusCenter/TelldusCenter-2.1.2.exe  
-NOTE: Browser tricks needed nowadays to download non-https links!
-
-# Build telldus-mqtt vscode
-Cmake extension used for building and debugging.
-settings.json:  
-```
-"cmake.configureSettings": {
-        "CMAKE_TOOLCHAIN_FILE": "C:/vcpkg/scripts/buildsystems/vcpkg.cmake"
-    },
-```
-
-# Build telldus-mqtt cli linux/windows
-```bash
-cd <telldus-mqtt>
-cmake -B build
-cmake --build build
-```
-Run telldus-mqtt...
-
-# Install telldus-mqtt
-Windows: Administrator cmd window  
-Linux: sudo
-```bash
-cmake --install build
-```
+### Windows 11
+1. Install [vcpkg](https://vcpkg.io/en/getting-started.html), then `vcpkg install cJson pthreads && vcpkg integrate install`.
+2. Install [Mosquitto](https://mosquitto.org/download/) and [TelldusCenter 2.1.2](http://download.telldus.com/TellStick/Software/TelldusCenter/TelldusCenter-2.1.2.exe).
+3. Build with `-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake`, then `cmake --install build` as administrator.

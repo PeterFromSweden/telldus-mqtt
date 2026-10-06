@@ -47,8 +47,8 @@ endif()
 
 target_include_directories( ${PROJECT_NAME} PRIVATE ${MOSQUITTO_INCLUDE_DIRS} ${TELLDUS_CORE_INCLUDE_DIRS} ${CJSON_INCLUDE_DIRS})
 target_link_libraries( ${PROJECT_NAME} ${MOSQUITTO_LIBRARIES} ${TELLDUS_CORE_LIBRARIES}  ${CJSON_LIBRARIES} )
-if( !MSVC )
-  target_link_libraries( rt ) # rt library for timer
+if( NOT MSVC )
+  target_link_libraries( ${PROJECT_NAME} rt ) # rt library for timer
 endif()
 target_compile_definitions( ${PROJECT_NAME} PRIVATE ASRT_LOG_ENABLE ) # Extends ASRT with logging, not for unit tests targets
 
@@ -81,7 +81,7 @@ else()
   message( FATAL_ERROR "Only Linux and Windows targets currently supported!" )
 endif()
 add_test( NAME testjson COMMAND testjson )
-target_include_directories( testjson PRIVATE src ${MOSQUITTO_INCLUDE_DIRS} ${TELLDUS_CORE_INCLUDE_DIRS} ${CJSON_INCLUDE_DIRS} )
+target_include_directories( testjson PRIVATE src ${CMAKE_CURRENT_BINARY_DIR} ${MOSQUITTO_INCLUDE_DIRS} ${TELLDUS_CORE_INCLUDE_DIRS} ${CJSON_INCLUDE_DIRS} )
 target_link_libraries( testjson  ${CJSON_LIBRARIES})
 
 add_executable( teststringutils tests/teststringutils.c src/stringutils.c )
@@ -104,3 +104,39 @@ target_include_directories( testmytimer PRIVATE src )
 install( TARGETS ${PROJECT_NAME} )
 install( FILES telldus-mqtt.json DESTINATION "etc/telldus-mqtt" )
 install( FILES ${CMAKE_CURRENT_BINARY_DIR}/telldus-mqtt-homeassistant.json DESTINATION "etc/telldus-mqtt" )
+
+# ---- TELLSTICK SIMULATOR TESTS (Linux) ----
+# Link the bridge against a simulated libtelldus-core instead of the real one,
+# so the telldus and MQTT logic can be tested without a TellStick.
+if( CMAKE_SYSTEM_NAME STREQUAL "Linux" )
+  set( TM_SIM_SOURCES
+    tests/telldussim/telldussim.c
+    src/telldusclient.c
+    src/telldusdevice.c
+    src/telldussensor.c
+    src/mqttclient.c
+    src/config.c
+    src/configjson.c
+    src/stringutils.c
+    src/log.c
+    src/myconsole.c
+    src/mysyslog_linux.c
+    src/mythread_linux.c
+    src/mytimer_linux.c
+    src/criticalsection_stub.c
+  )
+  find_package( Threads REQUIRED )
+
+  add_executable( testtelldussim tests/testtelldussim.c ${TM_SIM_SOURCES} )
+  target_include_directories( testtelldussim PRIVATE src tests ${MOSQUITTO_INCLUDE_DIRS} ${TELLDUS_CORE_INCLUDE_DIRS} ${CJSON_INCLUDE_DIRS} )
+  target_link_libraries( testtelldussim ${MOSQUITTO_LIBRARIES} ${CJSON_LIBRARIES} Threads::Threads rt )
+  add_test( NAME testtelldussim COMMAND testtelldussim )
+
+  # End-to-end test through a real broker, skipped if mosquitto is not installed
+  find_program( MOSQUITTO_BROKER mosquitto PATHS /usr/sbin /usr/local/sbin )
+  add_executable( testbridge tests/testbridge.c ${TM_SIM_SOURCES} )
+  target_include_directories( testbridge PRIVATE src tests ${MOSQUITTO_INCLUDE_DIRS} ${TELLDUS_CORE_INCLUDE_DIRS} ${CJSON_INCLUDE_DIRS} )
+  target_link_libraries( testbridge ${MOSQUITTO_LIBRARIES} ${CJSON_LIBRARIES} Threads::Threads rt )
+  add_test( NAME testbridge COMMAND testbridge "${MOSQUITTO_BROKER}" )
+  set_tests_properties( testbridge PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 60 )
+endif()
