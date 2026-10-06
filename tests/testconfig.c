@@ -15,7 +15,7 @@ int testTranslation(void)
   char iostr[] = "telldus/A703AKOX/sensor/fineoffset_temperaturehumidity_183";
   char* name;
   name = Config_GetTopicTranslation(config, iostr);
-  res &= (name == NULL);
+  res |= (name == NULL);
   //puts(iostr);
   //puts(name);
 
@@ -26,7 +26,7 @@ int main(void)
 {
   config = Config_GetInstance();
   int res = 0;
-  res &= Config_Load(config, "telldus-mqtt.json");
-  res &= testTranslation();
+  res |= Config_Load(config, "telldus-mqtt.json");
+  res |= testTranslation();
   return res;
 }

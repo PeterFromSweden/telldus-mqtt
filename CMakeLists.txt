@@ -47,8 +47,8 @@ endif()
 
 target_include_directories( ${PROJECT_NAME} PRIVATE ${MOSQUITTO_INCLUDE_DIRS} ${TELLDUS_CORE_INCLUDE_DIRS} ${CJSON_INCLUDE_DIRS})
 target_link_libraries( ${PROJECT_NAME} ${MOSQUITTO_LIBRARIES} ${TELLDUS_CORE_LIBRARIES}  ${CJSON_LIBRARIES} )
-if( !MSVC )
-  target_link_libraries( rt ) # rt library for timer
+if( NOT MSVC )
+  target_link_libraries( ${PROJECT_NAME} rt ) # rt library for timer
 endif()
 target_compile_definitions( ${PROJECT_NAME} PRIVATE ASRT_LOG_ENABLE ) # Extends ASRT with logging, not for unit tests targets
 
@@ -81,7 +81,7 @@ else()
   message( FATAL_ERROR "Only Linux and Windows targets currently supported!" )
 endif()
 add_test( NAME testjson COMMAND testjson )
-target_include_directories( testjson PRIVATE src ${MOSQUITTO_INCLUDE_DIRS} ${TELLDUS_CORE_INCLUDE_DIRS} ${CJSON_INCLUDE_DIRS} )
+target_include_directories( testjson PRIVATE src ${CMAKE_CURRENT_BINARY_DIR} ${MOSQUITTO_INCLUDE_DIRS} ${TELLDUS_CORE_INCLUDE_DIRS} ${CJSON_INCLUDE_DIRS} )
 target_link_libraries( testjson  ${CJSON_LIBRARIES})
 
 add_executable( teststringutils tests/teststringutils.c src/stringutils.c )
