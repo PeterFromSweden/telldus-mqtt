@@ -14,6 +14,7 @@ static TelldusClient theTelldusClient;
 static bool created;
 
 static const char* getDeviceTypeString(int type);
+static void logTelldusError(const char* what, int error);
 
 static void telldusDeviceEvent(int deviceId, int method, const char *data, int callbackId, void *context);
 static void telldusDeviceChangeEvent(int deviceId, int changeEvent, int changeType, int callbackId, void *context);
@@ -37,7 +38,7 @@ TelldusClient* TelldusClient_GetInstance(void)
     }
     else if( ret < 0)
     {
-      Log(TM_LOG_ERROR, "Telldus error %s", tdGetErrorString(ret));
+      logTelldusError("Telldus error", ret);
       exit(1);
     }
     Log(TM_LOG_DEBUG, "Telldus has %i devices", ret);
@@ -76,7 +77,7 @@ bool TelldusClient_IsConnected(TelldusClient *self)
       if( ret != TELLSTICK_SUCCESS )
       {
         // Service is down (not supported method)
-        Log(TM_LOG_ERROR, "Telldus error %s", tdGetErrorString(ret));
+        logTelldusError("Telldus error", ret);
         TelldusClient_Disconnect(self);
       }
     }
@@ -102,7 +103,7 @@ int TelldusClient_Connect(TelldusClient *self)
   {
     if( !self->mutelog )
     {
-      Log(TM_LOG_ERROR, "Telldus connect error %s", tdGetErrorString(ret));
+      logTelldusError("Telldus connect error", ret);
       self->mutelog = true;
     }
     self->controllerId = TM_NO_CONTROLLER;
@@ -170,13 +171,22 @@ int TelldusClient_GetDeviceNo(TelldusClient *self, TDeviceGetOp op)
   }
   else if( ret < 0)
   {
-    Log(TM_LOG_ERROR, "Telldus device index %i error %s", deviceIndex, tdGetErrorString(ret));
+    char* errorString = tdGetErrorString(ret);
+    Log(TM_LOG_ERROR, "Telldus device index %i error %s", deviceIndex, errorString);
+    tdReleaseString(errorString);
     return -1;
   }
   
   self->lastDeviceIx = deviceIndex;
   
   return ret; // Device Id
+}
+
+static void logTelldusError(const char* what, int error)
+{
+  char* errorString = tdGetErrorString(error);
+  Log(TM_LOG_ERROR, "%s %s", what, errorString);
+  tdReleaseString(errorString);
 }
 
 static const char* getDeviceTypeString(int type)

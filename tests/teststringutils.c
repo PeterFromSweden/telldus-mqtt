@@ -42,7 +42,7 @@ int test2(void)
 // Architecture review issue #4: "Device-1" must not match inside "Device-10".
 int test3(void)
 {
-  char buffer[] = "homeassistant/light/Device-10/config homeassistant/light/Device-1/config";
+  char buffer[100] = "homeassistant/light/Device-10/config homeassistant/light/Device-1/config";
   ReplaceWordList(buffer,
     (const char * const []) {
       "Device-1", ""
