@@ -1,6 +1,6 @@
 cmake_minimum_required( VERSION 3.10.2 ) # Version as per Ubuntu 18.04
 
-project( telldus-mqtt VERSION 0.3 LANGUAGES C )
+project( telldus-mqtt VERSION 0.4 LANGUAGES C )
 set( CMAKE_C_STANDARD 11 )
 
 # package find location
@@ -58,7 +58,8 @@ configure_file( src/version.h.in version.h @ONLY )
 target_include_directories( ${PROJECT_NAME} PRIVATE ${MOSQUITTO_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR})
 
 # ---- TEST ----
-include( CTest )
+include( CTest ) # BUILD_TESTING=OFF skips the tests (e.g. OpenWrt)
+if( BUILD_TESTING )
 
 add_executable( testconfig tests/testconfig.c src/config.c src/configjson.c src/stringutils.c src/log.c src/myconsole.c )
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
@@ -99,6 +100,7 @@ else()
 endif()
 add_test( NAME testmytimer COMMAND testmytimer )
 target_include_directories( testmytimer PRIVATE src )
+endif()
 
 # ---- INSTALL ----
 install( TARGETS ${PROJECT_NAME} )
@@ -108,7 +110,7 @@ install( FILES ${CMAKE_CURRENT_BINARY_DIR}/telldus-mqtt-homeassistant.json DESTI
 # ---- TELLSTICK SIMULATOR TESTS (Linux) ----
 # Link the bridge against a simulated libtelldus-core instead of the real one,
 # so the telldus and MQTT logic can be tested without a TellStick.
-if( CMAKE_SYSTEM_NAME STREQUAL "Linux" )
+if( BUILD_TESTING AND CMAKE_SYSTEM_NAME STREQUAL "Linux" )
   set( TM_SIM_SOURCES
     tests/telldussim/telldussim.c
     src/telldusclient.c
