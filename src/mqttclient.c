@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include "log.h"
@@ -15,6 +16,16 @@ static void on_connect(struct mosquitto* mosq, void* obj, int reason_code);
 static void on_disconnect(struct mosquitto* mosq, void* obj, int reason_code);
 static void on_publish(struct mosquitto* mosq, void* obj, int mid);
 void on_message(struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg);
+
+// Delete a retained topic published before a topic-translation was added.
+static void clearMovedTopic(MqttClient* self, const char* defaultTopic, const char* topic)
+{
+  if( strcmp(defaultTopic, topic) != 0 )
+  {
+    Log(TM_LOG_DEBUG, "Clear retained default topic %s", defaultTopic);
+    mosquitto_publish(self->mosq, NULL, defaultTopic, 0, NULL, 0, true);
+  }
+}
 
 MqttClient* MqttClient_GetInstance(void)
 {
@@ -158,7 +169,16 @@ void MqttClient_AddSensor(MqttClient* self, TelldusSensor* sensor)
       ""  
       });
 
-  
+  // Remember default topics, to clear them if translated
+  char defaultConfigTopic[160];
+  char defaultAvailability[100];
+  ConfigJson_ParseContent(&cj);
+  snprintf(defaultConfigTopic, sizeof(defaultConfigTopic), "%s", ConfigJson_GetStringFromPropList(&cj, 
+    (const char * const []) {"sensor-config", "topic", ""}));
+  snprintf(defaultAvailability, sizeof(defaultAvailability), "%s", ConfigJson_GetStringFromPropList(&cj, 
+    (const char * const []) {"sensor-config-content", "availability", "topic", ""}));
+  ConfigJson_FreeJson(&cj);
+
   // Translate default generated topics with user defined.
   char* name = Config_GetTopicTranslation(self->config, ConfigJson_GetContent(&cj) );
 
@@ -185,6 +205,8 @@ void MqttClient_AddSensor(MqttClient* self, TelldusSensor* sensor)
   char* topic = ConfigJson_GetStringFromPropList(&cj, 
       (const char * const []) {"sensor-config", "topic", ""});
   char* payload = ConfigJson_GetJsonFromProp(&cj, "sensor-config-content");
+  clearMovedTopic(self, defaultConfigTopic, topic);
+  clearMovedTopic(self, defaultAvailability, sensor->availability);
   mosquitto_publish(
     self->mosq, 
     NULL, 
@@ -256,6 +278,16 @@ void MqttClient_AddDevice(MqttClient* self, TelldusDevice* device)
       ""  
       });
 
+  // Remember default topics, to clear them if translated
+  char defaultConfigTopic[160];
+  char defaultStateTopic[100];
+  ConfigJson_ParseContent(&cj);
+  snprintf(defaultConfigTopic, sizeof(defaultConfigTopic), "%s", ConfigJson_GetStringFromPropList(&cj, 
+    (const char * const []) {"device-config", "topic", ""}));
+  snprintf(defaultStateTopic, sizeof(defaultStateTopic), "%s", ConfigJson_GetStringFromPropList(&cj, 
+    (const char * const []) {"device-config-content", "state_topic", ""}));
+  ConfigJson_FreeJson(&cj);
+
   // Translate default generated topics with user defined.
   char* name = Config_GetTopicTranslation(self->config, ConfigJson_GetContent(&cj) );
 
@@ -282,6 +314,8 @@ void MqttClient_AddDevice(MqttClient* self, TelldusDevice* device)
   char* topic = ConfigJson_GetStringFromPropList(&cj, 
       (const char * const []) {"device-config", "topic", ""});
   char* payload = ConfigJson_GetJsonFromProp(&cj, "device-config-content");
+  clearMovedTopic(self, defaultConfigTopic, topic);
+  clearMovedTopic(self, defaultStateTopic, device->state_topic);
   mosquitto_publish(
     self->mosq, 
     NULL,
