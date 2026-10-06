@@ -4,6 +4,7 @@
 #include "configjson.h"
 #include "stringutils.h"
 #include "asrt.h"
+#include "version.h"
 
 // This file was made with visual studio code and character encoding ISO 8859-1
 // Default is UTF-8 which will expand non-ASCII to two bytes characters.
@@ -23,7 +24,7 @@ const char ref[] = "{\n\
 \t},\n\
 \t\"origin\":\t{\n\
 \t\t\"name\":\t\"telldus-mqtt\",\n\
-\t\t\"sw_version\":\t\"0.1.3\"\n\
+\t\t\"sw_version\":\t\"" TELLDUS_MQTT_VERSION "\"\n\
 \t}\n\
 }";
 
@@ -35,7 +36,9 @@ int buffer_replace(void)
   ConfigJson_Init(&cj);
   ASRT( !ConfigJson_LoadContent(&cj, "telldus-mqtt-homeassistant.json") );
   cJSON* cjson = cJSON_Parse(ConfigJson_GetContent(&cj));
-  strcpy( ConfigJson_GetContent(&cj), cJSON_Print(cjson));
+  char* printed = cJSON_Print(cjson);
+  strcpy( ConfigJson_GetContent(&cj), printed);
+  cJSON_free(printed);
   ReplaceWordList( ConfigJson_GetContent(&cj),
     (const char * const []) {
       "{serno}", "{device_no}", "{protocol}", "{model}", "{id}", "{datatype}", "{unit}", ""
@@ -53,6 +56,7 @@ int buffer_replace(void)
   // PrintComparison(payload, ref);
 
   int res = strcmp(payload, ref);
+  cJSON_free(payload);
 
   // printf("res = %d\n", res);
 
@@ -81,6 +85,7 @@ int bufferAndProperty_replace(void)
   // Zoom in to one property
   char* payload = ConfigJson_GetJsonFromProp(&cj, "sensor-config-content");
   strcpy( ConfigJson_GetContent(&cj), payload);
+  cJSON_free(payload);
   ConfigJson_FreeJson(&cj);
   ConfigJson_ParseContent(&cj);
   
@@ -179,9 +184,9 @@ errorexit:
 int main(void)
 {
   int res = 0;
-  res &= buffer_replace();
-  res &= bufferAndProperty_replace();
-  res &= GetSet();
+  res |= buffer_replace();
+  res |= bufferAndProperty_replace();
+  res |= GetSet();
   return res;
 }
 

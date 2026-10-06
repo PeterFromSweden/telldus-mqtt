@@ -23,12 +23,12 @@ static void myTimerCallback(MyTimer* myTimer);
 TelldusSensor* TelldusSensor_Create(const char *protocol, const char *model, int id, int dataType)
 {
   SensorNode* sensorNode = sensors;
-  SensorNode* lastSensorPtr;
+  SensorNode* lastSensorPtr = NULL;
   char str[80];
   char idStr[10];
   char dataTypeStr[20];
-  sprintf(idStr, "%i", id);
-  strcpy(dataTypeStr, TelldusSensor_DataTypeToString(dataType));
+  snprintf(idStr, sizeof(idStr), "%i", id);
+  snprintf(dataTypeStr, sizeof(dataTypeStr), "%s", TelldusSensor_DataTypeToString(dataType));
   
   // Find existing sensor
   while ( sensorNode != NULL )
@@ -59,11 +59,11 @@ TelldusSensor* TelldusSensor_Create(const char *protocol, const char *model, int
 
   // Initialize sensor
   TelldusSensor* self = &newSensorListNode->sensor;
-  strcpy(self->protocol, protocol);
-  strcpy(self->model, model);
-  strcpy(self->id, idStr);
-  strcpy(self->dataType, dataTypeStr);
-  strcpy(self->unit, TelldusSensor_DataTypeToUnit(dataType));
+  snprintf(self->protocol, sizeof(self->protocol), "%s", protocol);
+  snprintf(self->model, sizeof(self->model), "%s", model);
+  snprintf(self->id, sizeof(self->id), "%s", idStr);
+  snprintf(self->dataType, sizeof(self->dataType), "%s", dataTypeStr);
+  snprintf(self->unit, sizeof(self->unit), "%s", TelldusSensor_DataTypeToUnit(dataType));
   //Log(TM_LOG_DEBUG, "New sensor %s", TelldusSensor_ToString(sensor, str, sizeof(str)));
   
   self->myTimer = MyTimer_Create( myTimerCallback, (void*) self );
@@ -144,7 +144,7 @@ void TelldusSensor_OnEvent(const char *protocol, const char *model, int id, int 
   TelldusSensor* self = TelldusSensor_Create(protocol, model, id, dataType);
   
   // Add value
-  strcpy(self->value, value);
+  snprintf(self->value, sizeof(self->value), "%s", value);
   self->timestamp = timestamp;
 
   MqttClient_SensorValue(MqttClient_GetInstance(), self);

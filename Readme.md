@@ -107,6 +107,20 @@ sudo cmake --install build
 sudo apt install libcjson-dev
 ```
 
+### Quick setup and tests (Debian/Ubuntu)
+`scripts/setup-linux-deps.sh` installs the packages above and builds telldus-core
+from source. Claude Code cloud sessions run it automatically at startup.
+```bash
+scripts/setup-linux-deps.sh
+cmake -B build
+cmake --build build
+cd build && ctest --output-on-failure
+```
+`testtelldussim` and `testbridge` link against a TellStick simulator
+(`tests/telldussim/`) instead of libtelldus-core, so no TellStick is needed.
+`testbridge` also starts a local mosquitto broker and checks the MQTT topics end to end;
+it is skipped if mosquitto is not installed.
+
 ## Windows 11 / Visual Studio 2022
 ### Install vcpkg
 https://vcpkg.io/en/getting-started.html
