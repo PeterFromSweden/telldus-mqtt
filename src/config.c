@@ -50,9 +50,10 @@ int Config_GetInt(Config* self, const char* const property)
 void Config_GetStr(Config* self, const char* const property, char* outputString, int outputLen)
 {
   char* strp = Config_GetStrPtr(self, property);
-  if ( strp != NULL && outputString != NULL )
+  if ( strp != NULL && outputString != NULL && outputLen > 0 )
   {
     strncpy(outputString, strp, outputLen);
+    outputString[outputLen - 1] = '\0';
   }
   else
   {
@@ -73,7 +74,7 @@ char* Config_GetTopicTranslation(Config* self, char* ioString)
       cJSON* arrItem = cJSON_GetArrayItem(item, i);
       char* find = cJSON_GetStringValue(cJSON_GetObjectItem(arrItem, "telldus"));
       char* replace = cJSON_GetStringValue(cJSON_GetObjectItem(arrItem, "mqtt"));
-      if( find != NULL )
+      if( find != NULL && replace != NULL )
       {
         if( ReplaceWords(ioString, find, replace) )
         {
