@@ -33,7 +33,7 @@ Bridge between Telldus 433 MHz devices and MQTT, with Home Assistant MQTT Discov
 
 ## Run
 ```bash
-telldus-mqtt [--nodaemon] [--debug] [--logtime] [--raw]
+telldus-mqtt [--nodaemon] [--debug] [--logtime] [--raw] [--version]
 ```
 `--raw` logs raw RF messages, useful for finding remote controls.
 

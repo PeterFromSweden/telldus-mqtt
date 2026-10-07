@@ -1,6 +1,6 @@
 cmake_minimum_required( VERSION 3.10.2 ) # Version as per Ubuntu 18.04
 
-project( telldus-mqtt VERSION 0.4 LANGUAGES C )
+project( telldus-mqtt VERSION 0.4.1 LANGUAGES C )
 set( CMAKE_C_STANDARD 11 )
 
 # package find location

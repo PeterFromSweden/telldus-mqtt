@@ -62,9 +62,15 @@ int main(int argc, char *argv[])
     {
       log_raw = true;
     }
+    else if( strcmp(argv[arg], "--version") == 0 )
+    {
+      printf("telldus-mqtt %s\n", TELLDUS_MQTT_VERSION);
+      exit(0);
+    }
     else
     {
-      printf("telldus-mqtt [--nodaemon] [--debug] [--logtime] [--raw]\n");
+      printf("telldus-mqtt %s\n", TELLDUS_MQTT_VERSION);
+      printf("telldus-mqtt [--nodaemon] [--debug] [--logtime] [--raw] [--version]\n");
       exit(1);
     }
     arg++;
