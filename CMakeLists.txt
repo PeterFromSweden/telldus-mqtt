@@ -179,4 +179,7 @@ if( BUILD_TESTING AND CMAKE_SYSTEM_NAME STREQUAL "Linux" )
   # OpenWrt scripts, skipped if ucode with uci is not installed
   add_test( NAME openwrt-scripts COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/openwrt/tests/run-tests.sh ${CONFUSEDUMP} )
   set_tests_properties( openwrt-scripts PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 60 )
+  # uci-defaults and init script of openwrt/package, skipped as above or without uci
+  add_test( NAME openwrt-package COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/openwrt/tests/test-package.sh )
+  set_tests_properties( openwrt-package PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 60 )
 endif()
