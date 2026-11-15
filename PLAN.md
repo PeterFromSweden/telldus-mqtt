@@ -47,7 +47,7 @@ The openwrt/packages PR needs:
 
 ## Next
 1. #5 Robust set: now one resend after 1 s. Find out if telldus-core repeats. If not, add more resends with a small random delay. Make the count a config value.
-2. CI: build and run ctest on GitHub Actions for each PR.
+2. CI: done in `.github/workflows/build.yml` (ctest and OpenWrt build). Add more targets if necessary.
 3. Exit codes: use one exit code per failure type (MQTT, telldusd, config). Update `analyze-logs.sh`.
 
 ## Maybe later
