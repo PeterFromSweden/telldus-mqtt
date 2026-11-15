@@ -43,6 +43,11 @@ typedef struct {
 } StatusDevice;
 
 typedef struct {
+  time_t time;
+  char raw[STATUS_EVENT_LEN];
+} StatusEvent;
+
+typedef struct {
   CriticalSection* cs;
   char path[STATUS_PATH_LEN];
   char tmpPath[STATUS_PATH_LEN + 4];
@@ -58,7 +63,9 @@ typedef struct {
   char gatewaySerial[20];
   bool brokerConnected;
   StatusDevice* devices; // STATUS_MAX_DEVICES entries
-  // Step 3: raw RF events (newest first) go here and in addEvents().
+  StatusEvent* events;   // STATUS_MAX_EVENTS entries, a ring
+  int eventNewest;       // Index of the newest event
+  int eventCount;
 } Status;
 
 static Status theStatus;
@@ -81,8 +88,9 @@ int Status_Init(const char* path)
 
   *self = (Status) {0};
   self->devices = (StatusDevice*) calloc(STATUS_MAX_DEVICES, sizeof(StatusDevice));
+  self->events = (StatusEvent*) calloc(STATUS_MAX_EVENTS, sizeof(StatusEvent));
   self->cs = CriticalSection_Create();
-  if( self->devices == NULL || self->cs == NULL )
+  if( self->devices == NULL || self->events == NULL || self->cs == NULL )
   {
     Log(TM_LOG_ERROR, "Status: out of memory");
     Status_Destroy();
@@ -104,6 +112,7 @@ void Status_Destroy(void)
   enabled = false;
   CriticalSection_Destroy(self->cs);
   free(self->devices);
+  free(self->events);
   *self = (Status) {0};
 }
 
@@ -280,16 +289,120 @@ void Status_SwitchValue(int deviceNumber, const char* state)
   CriticalSection_Leave(self->cs);
 }
 
+// Copy text to dest without spaces at start and end
+static void copyTrimmed(char* dest, size_t destSize, const char* text, size_t len)
+{
+  while( len > 0 && isspace((unsigned char) text[0]) )
+  {
+    text++;
+    len--;
+  }
+  while( len > 0 && isspace((unsigned char) text[len - 1]) )
+  {
+    len--;
+  }
+  if( len >= destSize )
+  {
+    len = destSize - 1;
+  }
+  memcpy(dest, text, len);
+  dest[len] = '\0';
+}
+
+// Get the next "key:value" part of a raw event and move *pos after it.
+// Parts without a colon or with an empty key are skipped.
+// Returns false when there are no more parts.
+static bool nextPair(const char** pos, char* key, char* value)
+{
+  const char* p = *pos;
+  while( *p != '\0' )
+  {
+    size_t len = strcspn(p, ";");
+    const char* colon = memchr(p, ':', len);
+    const char* part = p;
+    p += len;
+    if( *p == ';' )
+    {
+      p++;
+    }
+    if( colon != NULL )
+    {
+      copyTrimmed(key, STATUS_EVENT_LEN, part, (size_t) (colon - part));
+      copyTrimmed(value, STATUS_EVENT_LEN, colon + 1, len - (size_t) (colon - part) - 1);
+      if( key[0] != '\0' )
+      {
+        *pos = p;
+        return true;
+      }
+    }
+  }
+  *pos = p;
+  return false;
+}
+
+static bool isCommandEvent(const char* raw)
+{
+  char key[STATUS_EVENT_LEN];
+  char value[STATUS_EVENT_LEN];
+  while( nextPair(&raw, key, value) )
+  {
+    if( strcmp(key, "class") == 0 )
+    {
+      return strcmp(value, "command") == 0;
+    }
+  }
+  return false;
+}
+
+// Copy data to raw. A too long text is cut after its last complete part.
+static void copyRaw(char* raw, const char* data)
+{
+  size_t len = strlen(data);
+  copyString(raw, STATUS_EVENT_LEN, data);
+  if( len >= STATUS_EVENT_LEN )
+  {
+    char* last = strrchr(raw, ';');
+    if( last != NULL )
+    {
+      last[1] = '\0';
+    }
+  }
+}
+
 void Status_RawEvent(const char* data)
 {
   Status* self = &theStatus;
-  if( !enabled )
+  if( !enabled || data == NULL )
   {
     return;
   }
+  char raw[STATUS_EVENT_LEN];
+  copyRaw(raw, data);
+  bool command = isCommandEvent(raw);
+  time_t now = time(NULL);
+
   CriticalSection_Enter(self->cs);
-  self->lastRf = time(NULL);
-  // Step 3: keep data in the raw RF event list.
+  self->lastRf = now;
+  if( command )
+  {
+    // A remote sends each message several times: keep one entry
+    StatusEvent* newest = &self->events[self->eventNewest];
+    if( self->eventCount > 0 && strcmp(newest->raw, raw) == 0 )
+    {
+      newest->time = now;
+    }
+    else
+    {
+      self->eventNewest = (self->eventNewest + 1) % STATUS_MAX_EVENTS;
+      if( self->eventCount < STATUS_MAX_EVENTS )
+      {
+        self->eventCount++;
+      }
+      newest = &self->events[self->eventNewest];
+      newest->time = now;
+      copyString(newest->raw, sizeof(newest->raw), raw);
+    }
+  }
   self->dirty = true;
   CriticalSection_Leave(self->cs);
 }
@@ -358,10 +471,28 @@ static void addDevice(Status* self, cJSON* array, StatusDevice* device)
   cJSON_AddItemToArray(array, item);
 }
 
-// Step 3: add raw RF events here, max 20, newest first.
+// Raw RF command events, newest first. The keys are as in the raw text.
 static void addEvents(Status* self, cJSON* root)
 {
-  cJSON_AddArrayToObject(root, "events");
+  cJSON* events = cJSON_AddArrayToObject(root, "events");
+  for( int i = 0; i < self->eventCount; i++ )
+  {
+    StatusEvent* event = &self->events[(self->eventNewest - i + STATUS_MAX_EVENTS) % STATUS_MAX_EVENTS];
+    cJSON* item = cJSON_CreateObject();
+    cJSON_AddNumberToObject(item, "time", (double) event->time);
+    const char* pos = event->raw;
+    char key[STATUS_EVENT_LEN];
+    char value[STATUS_EVENT_LEN];
+    while( nextPair(&pos, key, value) )
+    {
+      // "time" is ours, and a key is listed one time only
+      if( cJSON_GetObjectItemCaseSensitive(item, key) == NULL )
+      {
+        cJSON_AddStringToObject(item, key, value);
+      }
+    }
+    cJSON_AddItemToArray(events, item);
+  }
 }
 
 static char* createJson(Status* self, time_t now)
