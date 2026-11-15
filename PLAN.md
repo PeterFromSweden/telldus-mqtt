@@ -48,6 +48,7 @@ The openwrt/packages PR needs:
   - uci-defaults: after json2uci, run `ucode .../telldus-mqtt-tellstick2uci.uc /etc/tellstick.conf /etc/config "$serial"`. `serial` is from the status file of a daemon that ran before: `jsonfilter -i /var/run/telldus-mqtt.json -e '@.gateway.serial'`.
   - Device names in tellstick.conf do not change (host scripts read `tdtool -l`). Only a new device gets the UCI name. After the import, uci2tellstick prints `unchanged` for the owner's file.
   - Limits: on a first install, there is no status file, so there is no serial. Then the import works only if each switch id has one section, or one section without `gateway`. Else it stops with an error and changes nothing; the user runs it again with the serial. The controller sections of tellstick.conf do not tell which TellStick is on this router. telldusd reads tellstick.conf only at start, and writes all of it from memory (for example for a new controller). Thus restart telldusd at once after `changed`: a telldusd with the old devices can write them back. Then the next run prints `changed` again and the restart corrects it. Not tested on a router.
+- Step 6, LuCI: the init script starts the daemon with `--status /var/run/telldus-mqtt.json` and has a reload trigger on the UCI config `telldus-mqtt`. `luci-app-telldus-mqtt` needs `rpcd-mod-ucode`.
 - Remove `telldus-mqtt-watchdog.sh` when the status file has the time since the last RF message (the script has the topic "Hemma" hard-coded).
 
 ## Next
