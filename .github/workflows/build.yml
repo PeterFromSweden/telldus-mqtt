@@ -1,0 +1,68 @@
+name: Build and test
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: ctest (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: scripts/setup-linux-deps.sh
+      - name: Build
+        run: cmake -B build && cmake --build build -j"$(nproc)"
+      - name: Test
+        run: cd build && ctest --output-on-failure
+
+  openwrt:
+    name: OpenWrt ${{ matrix.sdk }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sdk:
+          - arm_cortex-a9_vfpv3-d16-openwrt-23.05 # mvebu cortexa9 (opkg)
+          - arm_cortex-a9_vfpv3-d16-openwrt-24.10 # mvebu cortexa9 (opkg)
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: src
+
+      # Uses the package Makefile from the openwrt/packages feed,
+      # with the source replaced by this checkout.
+      - name: Build in OpenWrt SDK
+        run: |
+          mkdir -p out
+          sudo chown -R 1000:1000 src out
+          docker run --rm -v "$PWD/src:/src" -v "$PWD/out:/out" \
+            ghcr.io/openwrt/sdk:${{ matrix.sdk }} bash -c '
+            set -e
+            [ ! -f setup.sh ] || bash setup.sh
+            sed -e "s,https://git.openwrt.org/feed/,https://github.com/openwrt/," \
+                -e "s,https://git.openwrt.org/openwrt/,https://github.com/openwrt/," \
+                -e "s,https://git.openwrt.org/project/,https://github.com/openwrt/," \
+                feeds.conf.default > feeds.conf
+            ./scripts/feeds update -a
+            ./scripts/feeds install -a
+            mk=$(readlink -f package/feeds/packages/telldus-mqtt)/Makefile
+            sed -i -e "/^PKG_SOURCE_PROTO/d" -e "/^PKG_SOURCE_URL/d" \
+                   -e "/^PKG_SOURCE_VERSION/d" -e "/^PKG_MIRROR_HASH/d" "$mk"
+            sed -i "/^\$(eval \$(call BuildPackage/i define Build/Prepare\n\tmkdir -p \$(PKG_BUILD_DIR)\n\tcp -r /src/. \$(PKG_BUILD_DIR)\n\trm -rf \$(PKG_BUILD_DIR)/.git \$(PKG_BUILD_DIR)/build\nendef\n" "$mk"
+            cat "$mk"
+            make defconfig
+            make package/telldus-mqtt/compile V=s -j"$(nproc)"
+            find bin -name "telldus-mqtt*.[ia]pk" -exec cp {} /out/ \;
+            find build_dir -path "*/telldus-mqtt*/ipkg-*/telldus-mqtt/usr/bin/telldus-mqtt" -exec cp {} /out/ \;
+            ls -l /out
+            ls /out | grep -q "telldus-mqtt.*pk" || { echo "telldus-mqtt package not built"; exit 1; }
+          '
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: telldus-mqtt-${{ matrix.sdk }}
+          path: out/*
