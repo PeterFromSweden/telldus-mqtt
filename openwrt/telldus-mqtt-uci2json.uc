@@ -66,7 +66,10 @@ function uci2json(sections) {
 
 	for (let i = 0; i < length(devices); i++) {
 		let d = devices[i];
-		if (text(d.type) == '' || text(d.id) == '' || text(d.name) == '') {
+		// A switch without name, only for tellstick.conf: not published
+		if (d.type == 'switch' && text(d.id) != '' && text(d.name) == '' && text(d.protocol) != '')
+			continue;
+		if (text(d.type) == ''|| text(d.id) == '' || text(d.name) == '') {
 			push(warnings, sprintf('device section %s: no type, id or name, skipped', d['.name']));
 			continue;
 		}

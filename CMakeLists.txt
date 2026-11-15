@@ -164,7 +164,19 @@ if( BUILD_TESTING AND CMAKE_SYSTEM_NAME STREQUAL "Linux" )
   target_link_libraries( teststatus ${MOSQUITTO_LIBRARIES} ${CJSON_LIBRARIES} Threads::Threads rt )
   add_test( NAME teststatus COMMAND teststatus )
 
-  # OpenWrt generator and migration, skipped if ucode with uci is not installed
-  add_test( NAME openwrt-scripts COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/openwrt/tests/run-tests.sh )
+  # tellstick.conf read with libconfuse as telldusd reads it (if libconfuse is installed)
+  find_path( CONFUSE_INCLUDE_DIR confuse.h )
+  find_library( CONFUSE_LIBRARY confuse )
+  set( CONFUSEDUMP "" )
+  if( CONFUSE_INCLUDE_DIR AND CONFUSE_LIBRARY )
+    add_executable( confusedump openwrt/tests/confusedump.c )
+    target_include_directories( confusedump PRIVATE ${CONFUSE_INCLUDE_DIR} )
+    target_link_libraries( confusedump ${CONFUSE_LIBRARY} )
+    add_test( NAME tellstick-conf-libconfuse COMMAND confusedump ${CMAKE_CURRENT_SOURCE_DIR}/openwrt/tests/tellstick.conf )
+    set( CONFUSEDUMP $<TARGET_FILE:confusedump> )
+  endif()
+
+  # OpenWrt scripts, skipped if ucode with uci is not installed
+  add_test( NAME openwrt-scripts COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/openwrt/tests/run-tests.sh ${CONFUSEDUMP} )
   set_tests_properties( openwrt-scripts PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 60 )
 endif()
