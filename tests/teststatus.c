@@ -131,7 +131,7 @@ static int testEarlyWrite(void)
 
   cJSON* status = readStatus();
   CHECK( status != NULL );
-  const char* const keys[] = { "format", "version", "started", "updated", "gateway",
+  const char* const keys[] = { "format", "version", "started", "updated", "running", "gateway",
     "service", "broker", "last_rf", "devices", "events" };
   for( size_t i = 0; i < sizeof(keys) / sizeof(keys[0]); i++ )
   {
@@ -143,6 +143,7 @@ static int testEarlyWrite(void)
   CHECK( getNumber(status, "started") >= start );
   CHECK( getNumber(status, "updated") >= getNumber(status, "started") );
   CHECK( getNumber(status, "last_rf") == 0 );
+  CHECK( getBool(status, "running") );
   CHECK( !getBool(cJSON_GetObjectItem(status, "service"), "connected") );
   CHECK( !getBool(cJSON_GetObjectItem(status, "gateway"), "found") );
   cJSON* broker = cJSON_GetObjectItem(status, "broker");
@@ -531,6 +532,18 @@ static int testUnplug(void)
   return 0;
 }
 
+// At exit: "running" is false, the connection state is kept
+static int testStop(void)
+{
+  Status_Stop();
+  cJSON* status = readStatus();
+  CHECK( status != NULL );
+  CHECK( !getBool(status, "running") );
+  CHECK( getBool(cJSON_GetObjectItem(status, "service"), "connected") );
+  cJSON_Delete(status);
+  return 0;
+}
+
 // Without --status (no Status_Init), no file is written
 static int testNoFileWithoutOption(void)
 {
@@ -577,6 +590,7 @@ int main(void)
     res |= testPoll();
     res |= testOffline();
     res |= testUnplug();
+    res |= testStop();
   }
   res |= testNoFileWithoutOption();
 
