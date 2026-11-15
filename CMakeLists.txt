@@ -163,4 +163,8 @@ if( BUILD_TESTING AND CMAKE_SYSTEM_NAME STREQUAL "Linux" )
   target_include_directories( teststatus PRIVATE src tests ${CMAKE_CURRENT_BINARY_DIR} ${MOSQUITTO_INCLUDE_DIRS} ${TELLDUS_CORE_INCLUDE_DIRS} ${CJSON_INCLUDE_DIRS} )
   target_link_libraries( teststatus ${MOSQUITTO_LIBRARIES} ${CJSON_LIBRARIES} Threads::Threads rt )
   add_test( NAME teststatus COMMAND teststatus )
+
+  # OpenWrt generator and migration, skipped if ucode with uci is not installed
+  add_test( NAME openwrt-scripts COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/openwrt/tests/run-tests.sh )
+  set_tests_properties( openwrt-scripts PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 60 )
 endif()
