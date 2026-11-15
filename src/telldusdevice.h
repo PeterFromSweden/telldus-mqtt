@@ -1,6 +1,7 @@
 #ifndef TELLDUSDEVICE_H_
 #define TELLDUSDEVICE_H_
 
+#include <stdbool.h>
 #include "mytimer.h"
 
 typedef enum {
@@ -16,6 +17,7 @@ typedef struct {
   char value[10];          // value as received from telldusd
   char lastAction[10];     // last action sent to telldusd
   MyTimer* myTimer;        // Resend timer
+  bool filtered;           // No name and filter-non-transled: not published
 } TelldusDevice;
 
 TelldusDevice* TelldusDevice_Create(int deviceNo);

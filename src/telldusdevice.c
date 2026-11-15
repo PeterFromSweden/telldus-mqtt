@@ -55,7 +55,7 @@ TelldusDevice* TelldusDevice_GetTopic(const char* topic)
   while ( deviceNode != NULL )
   {
     TelldusDevice* device = &deviceNode->device;
-    if( strcmp(device->command_topic, topic) == 0 )
+    if( !device->filtered && strcmp(device->command_topic, topic) == 0 )
     {
       char str[80];
       Log(TM_LOG_DEBUG, "Device from topic %s", TelldusDevice_ToString(&deviceNode->device, str, sizeof(str)));
@@ -200,6 +200,10 @@ void TelldusDevice_OnEvent(int deviceId, int method, const char *data, int callb
   snprintf(self->value, sizeof(self->value), "%s", TelldusDevice_MethodToString(method));
   Status_SwitchValue(deviceId, self->value);
 
+  if( self->filtered )
+  {
+    return;
+  }
   if( !MqttClient_IsConnected(MqttClient_GetInstance()) )
   {
     Log(TM_LOG_WARNING, "telldusDeviceEvent, not connected to mqtt => ignore");

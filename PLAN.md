@@ -38,10 +38,10 @@ Steps, one PR each:
 6. LuCI page. Peter tests it on a router.
 
 The openwrt/packages PR needs:
-- Makefile: depends on ucode, ucode-mod-uci, ucode-mod-fs. Install `openwrt/` scripts. Conffile `/etc/config/telldus-mqtt`.
-- Default `/etc/config/telldus-mqtt` (broker 127.0.0.1:1883).
-- uci-defaults script: run the migration once if telldus-mqtt.json exists.
-- Init script: run the generator, start with `--config /var/etc/telldus-mqtt.json`, respawn, reload on UCI change.
+- Makefile: depends on ucode, ucode-mod-uci, ucode-mod-fs. Install `openwrt/telldus-mqtt-uci2json.uc` and `openwrt/telldus-mqtt-json2uci.uc` (e.g. in `/usr/share/telldus-mqtt/`). Conffile `/etc/config/telldus-mqtt`.
+- Default `/etc/config/telldus-mqtt`: `config main 'main'` with enabled 1, host 127.0.0.1, port 1883, user/pass empty, offline_seconds 600, topic_prefix home.
+- uci-defaults script: if telldus-mqtt.json exists, run `ucode .../telldus-mqtt-json2uci.uc /etc/telldus-mqtt/telldus-mqtt.json`. It does nothing if the UCI config has device sections.
+- Init script: run `ucode .../telldus-mqtt-uci2json.uc /var/etc/telldus-mqtt.json` (writes mode 0600, exit code not 0 on error), start with `--config /var/etc/telldus-mqtt.json`, respawn, reload on UCI change. No `-` options after the script name (ucode reads them).
 - Step 5: write tellstick.conf while telldusd is stopped (telldusd also writes it), then start telldusd.
 - Remove `telldus-mqtt-watchdog.sh` when the status file has the time since the last RF message (the script has the topic "Hemma" hard-coded).
 

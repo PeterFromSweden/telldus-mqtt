@@ -147,6 +147,10 @@ void TelldusSensor_OnEvent(const char *protocol, const char *model, int id, int 
 
   // Find or create new sensor
   TelldusSensor* self = TelldusSensor_Create(protocol, model, id, dataType);
+  if( self->filtered )
+  {
+    return;
+  }
   
   // Add value
   snprintf(self->value, sizeof(self->value), "%s", value);

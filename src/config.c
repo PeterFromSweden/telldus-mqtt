@@ -69,48 +69,104 @@ void Config_GetStr(Config* self, const char* const property, char* outputString,
   }
 }
 
-char* Config_GetTopicTranslation(Config* self, char* ioString)
+bool Config_FilterUnnamed(Config* self)
 {
-  cJSON* item = cJSON_GetObjectItem(self->configJson.json, "topic-translation");
+  // Optional: not with Config_GetStrPtr, which logs an error when missing
+  char* filter = cJSON_GetStringValue(cJSON_GetObjectItem(self->configJson.json, "filter-non-transled"));
+  return filter != NULL && strcmp(filter, "yes") == 0;
+}
 
-  if ( cJSON_IsArray(item) )
+// Find the "devices" entry of a device. An entry with a gateway matches only
+// that TellStick serial, an entry without one matches any. Returns NULL if none.
+static cJSON* findDeviceEntry(Config* self, const char* serial, const char* type, const char* id)
+{
+  cJSON* entry;
+  cJSON_ArrayForEach(entry, cJSON_GetObjectItem(self->configJson.json, "devices"))
   {
-    int arrSize = cJSON_GetArraySize(item);
-    int i = 0;
-    while ( i < arrSize )
+    char* entryType = cJSON_GetStringValue(cJSON_GetObjectItem(entry, "type"));
+    char* entryId = cJSON_GetStringValue(cJSON_GetObjectItem(entry, "id"));
+    char* topic = cJSON_GetStringValue(cJSON_GetObjectItem(entry, "topic"));
+    char* gateway = cJSON_GetStringValue(cJSON_GetObjectItem(entry, "gateway"));
+    if( entryType == NULL || entryId == NULL || topic == NULL || *topic == '\0' ||
+        strcmp(entryType, type) != 0 || strcmp(entryId, id) != 0 )
     {
-      cJSON* arrItem = cJSON_GetArrayItem(item, i);
-      char* find = cJSON_GetStringValue(cJSON_GetObjectItem(arrItem, "telldus"));
-      char* replace = cJSON_GetStringValue(cJSON_GetObjectItem(arrItem, "mqtt"));
-      if( find != NULL && replace != NULL )
-      {
-        if( ReplaceWords(ioString, find, replace) )
-        {
-          // Log(TM_LOG_DEBUG, "Content2:\n%s", cJSON_Print(content));
-          return cJSON_GetStringValue(cJSON_GetObjectItem(arrItem, "name"));
-        }
-      }
-      i++;
+      continue;
     }
-    Log(TM_LOG_DEBUG, "No match of translation");
-  }
-  else
-  {
-    // topic-translation is optional
-    Log(TM_LOG_DEBUG, "Property topic-translation was not a found array");
+    if( gateway != NULL && *gateway != '\0' && strcmp(gateway, serial) != 0 )
+    {
+      continue;
+    }
+    return entry;
   }
   return NULL;
 }
 
-const char* Config_FindTopicTranslation(Config* self, const char* telldusTopic, const char** name)
+static void defaultTopic(char* topic, size_t topicSize, const char* serial, const char* type, const char* id)
 {
-  cJSON* item = cJSON_GetObjectItem(self->configJson.json, "topic-translation");
-  int arrSize = cJSON_IsArray(item) ? cJSON_GetArraySize(item) : 0;
+  snprintf(topic, topicSize, "telldus/%s/%s/%s", serial, type, id);
+}
 
+bool Config_TranslateTopics(Config* self, const char* serial, const char* type, const char* id,
+  char* text, size_t textSize, const char** name)
+{
   *name = NULL;
-  for( int i = 0; i < arrSize; i++ )
+
+  // "devices": as a topic-translation of the default topic
+  cJSON* entry = findDeviceEntry(self, serial, type, id);
+  if( entry != NULL )
   {
-    cJSON* arrItem = cJSON_GetArrayItem(item, i);
+    char find[160];
+    defaultTopic(find, sizeof(find), serial, type, id);
+    char* topic = cJSON_GetStringValue(cJSON_GetObjectItem(entry, "topic"));
+    if( ReplaceWordsSize(text, textSize, find, topic) )
+    {
+      *name = cJSON_GetStringValue(cJSON_GetObjectItem(entry, "name"));
+      return true;
+    }
+    Log(TM_LOG_ERROR, "Topic %s is too long => not used", topic);
+    return false;
+  }
+
+  cJSON* item = cJSON_GetObjectItem(self->configJson.json, "topic-translation");
+  if( !cJSON_IsArray(item) )
+  {
+    // topic-translation is optional
+    Log(TM_LOG_DEBUG, "Property topic-translation was not a found array");
+    return false;
+  }
+  cJSON* arrItem;
+  cJSON_ArrayForEach(arrItem, item)
+  {
+    char* find = cJSON_GetStringValue(cJSON_GetObjectItem(arrItem, "telldus"));
+    char* replace = cJSON_GetStringValue(cJSON_GetObjectItem(arrItem, "mqtt"));
+    if( find != NULL && replace != NULL )
+    {
+      if( ReplaceWordsSize(text, textSize, find, replace) )
+      {
+        *name = cJSON_GetStringValue(cJSON_GetObjectItem(arrItem, "name"));
+        return true;
+      }
+    }
+  }
+  Log(TM_LOG_DEBUG, "No match of translation");
+  return false;
+}
+
+const char* Config_FindTopic(Config* self, const char* serial, const char* type, const char* id, const char** name)
+{
+  *name = NULL;
+  cJSON* entry = findDeviceEntry(self, serial, type, id);
+  if( entry != NULL )
+  {
+    *name = cJSON_GetStringValue(cJSON_GetObjectItem(entry, "name"));
+    return cJSON_GetStringValue(cJSON_GetObjectItem(entry, "topic"));
+  }
+
+  char telldusTopic[160];
+  defaultTopic(telldusTopic, sizeof(telldusTopic), serial, type, id);
+  cJSON* arrItem;
+  cJSON_ArrayForEach(arrItem, cJSON_GetObjectItem(self->configJson.json, "topic-translation"))
+  {
     char* find = cJSON_GetStringValue(cJSON_GetObjectItem(arrItem, "telldus"));
     char* replace = cJSON_GetStringValue(cJSON_GetObjectItem(arrItem, "mqtt"));
     if( find != NULL && replace != NULL && strcmp(find, telldusTopic) == 0 )

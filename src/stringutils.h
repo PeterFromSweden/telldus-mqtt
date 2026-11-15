@@ -2,8 +2,10 @@
 #define STRINGUTILS_H_
 
 #include <stdbool.h>
+#include <stddef.h>
 
 bool ReplaceWords(char *buffer, const char *find, const char *replace);
+bool ReplaceWordsSize(char* buffer, size_t bufferSize, const char* find, const char* replace);
 void ReplaceWordList(char* buffer, const char* const find[], const char* const replace[]);
 
 #endif // STRINGUTILS_H_

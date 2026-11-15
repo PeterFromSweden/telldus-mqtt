@@ -432,22 +432,13 @@ static bool updateOnline(Status* self, time_t now)
 static void addDevice(Status* self, cJSON* array, StatusDevice* device)
 {
   cJSON* item = cJSON_CreateObject();
-  char telldusTopic[160];
-  if( device->type == STATUS_DEVICE_SENSOR )
-  {
-    cJSON_AddStringToObject(item, "type", "sensor");
-    snprintf(telldusTopic, sizeof(telldusTopic), "telldus/%s/sensor/%s", self->gatewaySerial, device->id);
-  }
-  else
-  {
-    cJSON_AddStringToObject(item, "type", "switch");
-    snprintf(telldusTopic, sizeof(telldusTopic), "telldus/%s/switch/%s", self->gatewaySerial, device->id);
-  }
+  const char* type = device->type == STATUS_DEVICE_SENSOR ? "sensor" : "switch";
+  cJSON_AddStringToObject(item, "type", type);
   cJSON_AddStringToObject(item, "id", device->id);
 
-  // Only devices with a topic-translation have a name and topic
+  // Only devices in "devices" or "topic-translation" have a name and topic
   const char* name;
-  const char* topic = Config_FindTopicTranslation(Config_GetInstance(), telldusTopic, &name);
+  const char* topic = Config_FindTopic(Config_GetInstance(), self->gatewaySerial, type, device->id, &name);
   if( topic != NULL )
   {
     if( name != NULL )
