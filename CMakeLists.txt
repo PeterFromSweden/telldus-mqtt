@@ -100,6 +100,14 @@ else()
 endif()
 add_test( NAME testmytimer COMMAND testmytimer )
 target_include_directories( testmytimer PRIVATE src )
+
+# --config <path> on the command line
+add_test( NAME cli-config-missing-arg COMMAND ${PROJECT_NAME} --nodaemon --config )
+set_tests_properties( cli-config-missing-arg PROPERTIES WILL_FAIL TRUE )
+add_test( NAME cli-config-no-file COMMAND ${PROJECT_NAME} --nodaemon --config no-such-dir/telldus-mqtt.json )
+set_tests_properties( cli-config-no-file PROPERTIES WILL_FAIL TRUE )
+add_test( NAME cli-config-no-file-msg COMMAND ${PROJECT_NAME} --nodaemon --config no-such-dir/telldus-mqtt.json )
+set_tests_properties( cli-config-no-file-msg PROPERTIES PASS_REGULAR_EXPRESSION "no-such-dir/telldus-mqtt.json No such file" )
 endif()
 
 # ---- INSTALL ----

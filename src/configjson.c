@@ -15,6 +15,7 @@ typedef enum {
 static bool loggedVersion;
 
 static void contentMarker(ConfigJson* self, TMarkerOp op);
+static int loadFromFile(ConfigJson* self, FILE* f);
 
 void ConfigJson_Init(ConfigJson* self)
 {
@@ -40,43 +41,52 @@ void ConfigJson_Destroy(ConfigJson* self)
 
 int ConfigJson_LoadContent(ConfigJson* self, char* configFilename )
 {
-  char strPath[160];
+  // Linux execute, Windows IDE execute, Windows installed execute, Linux installed
+  const char* const prefixes[] = { "", "../", "../etc/telldus-mqtt/", "/etc/telldus-mqtt/" };
+  char strPath[256];
 
-  // Linux execute
-  FILE* f = fopen(configFilename, "rt");
-  if ( !f )
+  for( size_t i = 0; i < sizeof(prefixes) / sizeof(prefixes[0]); i++ )
   {
-    // Windows IDE execute
-    strcpy(strPath, "../");
-    strcat(strPath, configFilename);
-    f = fopen(strPath, "rt");
-  }
-  
-  if ( !f )
-  {
-    // Windows installed execute
-    strcpy(strPath, "../etc/telldus-mqtt/");
-    strcat(strPath, configFilename);
-    f = fopen(strPath, "rt");
-  }
-  
-  if ( !f )
-  {
-    strcpy(strPath, "/etc/telldus-mqtt/");
-    strcat(strPath, configFilename);
-    f = fopen(strPath, "rt");
+    int len = snprintf(strPath, sizeof(strPath), "%s%s", prefixes[i], configFilename);
+    if( len < 0 || len >= (int) sizeof(strPath) )
+    {
+      Log(TM_LOG_ERROR, "Path too long: %s%s", prefixes[i], configFilename);
+      return 1;
+    }
+    FILE* f = fopen(strPath, "rt");
+    if( f )
+    {
+      Log(TM_LOG_DEBUG, "Load %s", strPath);
+      return loadFromFile(self, f);
+    }
   }
 
-  if ( !f )
+  // Give up, report the last path
+  Log(TM_LOG_ERROR, "%s %s", strPath, strerror(errno));
+  return 1;
+}
+
+int ConfigJson_LoadFile(ConfigJson* self, const char* path)
+{
+  FILE* f = fopen(path, "rt");
+  if( !f )
   {
-    // Give up, report some of the paths...
-    Log(TM_LOG_DEBUG, "%s %s", configFilename, strerror(errno));
-    Log(TM_LOG_ERROR, "%s %s", strPath, strerror(errno));
+    Log(TM_LOG_ERROR, "%s %s", path, strerror(errno));
     return 1;
   }
+  return loadFromFile(self, f);
+}
 
+static int loadFromFile(ConfigJson* self, FILE* f)
+{
   fseek(f, 0L, SEEK_END);
   self->contentLen = ftell(f);
+  if( self->contentLen < 0 )
+  {
+    Log(TM_LOG_ERROR, "Cannot read config file");
+    fclose(f);
+    return 1;
+  }
   self->contentMaxLen = self->contentLen + 200;
   self->content = malloc(self->contentMaxLen);
   if ( self->content == NULL )

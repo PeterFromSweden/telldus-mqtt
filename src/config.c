@@ -32,9 +32,17 @@ int Config_Load(Config* self, char* configFilename )
   {
     return 1;
   }
-  ConfigJson_ParseContent( &self->configJson );
-  //ConfigJson_FreeContent( &self->configJson );
-  return 0;
+  return ConfigJson_ParseContent( &self->configJson );
+}
+
+int Config_LoadFile(Config* self, const char* path)
+{
+  if (ConfigJson_LoadFile( &self->configJson, path ))
+  {
+    return 1;
+  }
+  Log(TM_LOG_INFO, "Config %s", path);
+  return ConfigJson_ParseContent( &self->configJson );
 }
 
 char* Config_GetStrPtr(Config* self, const char* const property)

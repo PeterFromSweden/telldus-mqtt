@@ -15,6 +15,7 @@ void ConfigJson_Init(ConfigJson* self);
 void ConfigJson_Destroy(ConfigJson* self);
 
 int ConfigJson_LoadContent(ConfigJson* self, char* configFilename);
+int ConfigJson_LoadFile(ConfigJson* self, const char* path);
 char* ConfigJson_CopyToContent(ConfigJson* self, char* fromString);
 char* ConfigJson_GetContent(ConfigJson* self);
 long ConfigJson_GetContentLen(ConfigJson* self);
