@@ -51,8 +51,6 @@ function import_devices(devices, sections, serial) {
 			continue;
 		}
 		seen[id] = true;
-		if (d.controller != 0)
-			push(warnings, sprintf('device %s: controller %d is not kept (UCI has no option for it)', id, d.controller));
 
 		let options = { protocol: d.protocol, model: (d.model != '') ? d.model : null };
 		for (let p in lib.PARAMETERS)

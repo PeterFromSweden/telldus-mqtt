@@ -5,6 +5,7 @@
 //
 // Only if option manage_switches of the main section is '1'. Every device
 // section with type 'switch' and a protocol becomes a device in tellstick.conf.
+// A device that is in tellstick.conf already keeps its name and controller.
 // All other content of tellstick.conf stays as it is (telldusd writes the
 // controller sections). The file is changed only if the devices change.
 // Output on stdout: "changed", "unchanged" or "off" (manage_switches not 1).
@@ -83,6 +84,7 @@ function main(args) {
 			warn(sprintf('telldus-mqtt-uci2tellstick: cannot parse %s: %s. File not changed\n', path, e.message));
 			return 1;
 		}
+		lib.keep_existing(result.devices, parsed.devices);
 		if (lib.same_devices(parsed.devices, result.devices)) {
 			print('unchanged\n');
 			return 0;
