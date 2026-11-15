@@ -39,5 +39,7 @@ void Status_RawEvent(const char* data);
 void Status_Poll(void);
 // Write the file now. Returns 0 on success.
 int Status_Write(void);
+// The program stops: write the file a last time, with "running": false.
+void Status_Stop(void);
 
 #endif // STATUS_H_

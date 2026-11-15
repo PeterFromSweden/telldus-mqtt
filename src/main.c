@@ -198,10 +198,7 @@ static bool windowsSignalHandler(int sig)
 static void atexitFunction(void)
 {
   // Last status, with the connection state at exit
-  if( Status_IsEnabled() )
-  {
-    Status_Write();
-  }
+  Status_Stop();
 
   if( mqttclient )
   {

@@ -53,6 +53,7 @@ typedef struct {
   char tmpPath[STATUS_PATH_LEN + 4];
   int offlineSeconds;
   bool dirty;
+  bool stopped;
   bool mutelog;
   time_t started;
   time_t lastWrite;
@@ -495,6 +496,7 @@ static char* createJson(Status* self, time_t now)
   cJSON_AddStringToObject(root, "version", TELLDUS_MQTT_VERSION);
   cJSON_AddNumberToObject(root, "started", (double) self->started);
   cJSON_AddNumberToObject(root, "updated", (double) now);
+  cJSON_AddBoolToObject(root, "running", !self->stopped);
 
   cJSON* gateway = cJSON_AddObjectToObject(root, "gateway");
   cJSON_AddBoolToObject(gateway, "found", self->gatewayFound);
@@ -628,4 +630,18 @@ int Status_Write(void)
   int ret = writeStatus(self, time(NULL));
   CriticalSection_Leave(self->cs);
   return ret;
+}
+
+
+void Status_Stop(void)
+{
+  Status* self = &theStatus;
+  if( !enabled )
+  {
+    return;
+  }
+  CriticalSection_Enter(self->cs);
+  self->stopped = true;
+  writeStatus(self, time(NULL));
+  CriticalSection_Leave(self->cs);
 }
