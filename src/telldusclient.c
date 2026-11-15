@@ -4,6 +4,7 @@
 #include "telldusdevice.h"
 #include "telldussensor.h"
 #include "telldusclient.h"
+#include "status.h"
 
 // Temp include
 #include <stdio.h>
@@ -44,6 +45,7 @@ TelldusClient* TelldusClient_GetInstance(void)
     Log(TM_LOG_DEBUG, "Telldus has %i devices", ret);
     self->deviceCount = ret;
     created = true;
+    Status_SetService(true);
   }
   return self;
 }
@@ -79,6 +81,7 @@ bool TelldusClient_IsConnected(TelldusClient *self)
         // Service is down (not supported method)
         logTelldusError("Telldus error", ret);
         TelldusClient_Disconnect(self);
+        Status_SetService(false);
       }
     }
   }
@@ -117,6 +120,7 @@ int TelldusClient_Connect(TelldusClient *self)
 
   Log(TM_LOG_INFO, "Telldus controller id %i:%s:%s:%s selected", 
     id, str, self->controllerSerial, getDeviceTypeString(type));
+  Status_SetGateway(true, getDeviceTypeString(type), self->controllerSerial);
   
   self->evtController   = tdRegisterControllerEvent(&telldusControllerEvent, (void*) self);
   self->evtDeviceChange = tdRegisterDeviceChangeEvent(&telldusDeviceChangeEvent, (void*) self);
@@ -141,6 +145,7 @@ void TelldusClient_Disconnect(TelldusClient *self)
   self->evtSensor = 0;
   self->evtRawDevice = 0;
   self->controllerId = TM_NO_CONTROLLER;
+  Status_SetGateway(false, NULL, NULL);
 }
 
 int TelldusClient_GetDeviceNo(TelldusClient *self, TDeviceGetOp op)
@@ -239,6 +244,7 @@ static void telldusDeviceChangeEvent(int deviceId, int changeEvent, int changeTy
 static void telldusRawDeviceEvent(const char *data, int controllerId, int callbackId, void *context)
 {
   TelldusClient* self = (TelldusClient*) context;
+  Status_RawEvent(data);
   if( self->lograw )
   {
     // telldusRawDeviceEvent class :sensor; protocol:fineoffset; id : 167; model:temperaturehumidity; humidity : 44; temp:15.8; , 2, 5

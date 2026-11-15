@@ -33,9 +33,10 @@ Bridge between Telldus 433 MHz devices and MQTT, with Home Assistant MQTT Discov
 
 ## Run
 ```bash
-telldus-mqtt [--nodaemon] [--debug] [--logtime] [--raw] [--config <path>] [--version]
+telldus-mqtt [--nodaemon] [--debug] [--logtime] [--raw] [--config <path>] [--status <path>] [--version]
 ```
 `--config <path>` reads this config file. Default: `telldus-mqtt.json` in `/etc/telldus-mqtt`.
+`--status <path>` writes a JSON status file: connection state, and the sensors and switches heard, with their last values. Example: `/var/run/telldus-mqtt.json`.
 `--raw` logs raw RF messages, useful for finding remote controls.
 
 ## Install

@@ -142,6 +142,21 @@ void TelldusSim_DeviceEvent(int deviceId, int method)
   }
 }
 
+void TelldusSim_RawDeviceEvent(const char* data)
+{
+  pthread_mutex_lock(&lock);
+  int id = controllerId;
+  pthread_mutex_unlock(&lock);
+
+  Callback cbs[MAX_CALLBACKS];
+  int ids[MAX_CALLBACKS];
+  int n = collect(CB_RAW_DEVICE, cbs, ids);
+  for( int i = 0; i < n; i++ )
+  {
+    ((TDRawDeviceEvent) cbs[i].function)(data, id, ids[i], cbs[i].context);
+  }
+}
+
 int TelldusSim_GetTurnOnCount(int deviceId)
 {
   pthread_mutex_lock(&lock);

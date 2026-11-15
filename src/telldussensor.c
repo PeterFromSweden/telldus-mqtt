@@ -5,6 +5,7 @@
 #include "log.h"
 #include "mqttclient.h"
 #include "telldussensor.h"
+#include "status.h"
 
 
 typedef struct SensorNodeS SensorNode;
@@ -133,6 +134,10 @@ void TelldusSensor_OnEvent(const char *protocol, const char *model, int id, int 
 {
   //TelldusClient* self = (TelldusClient*) context;
   Log(TM_LOG_DEBUG, "telldusSensorEvent %s, %s, %i, %i, %s, %i, %i", protocol, model, id, dataType, value, timestamp, callbackId);
+  // First, so the status file lists every sensor heard: also unnamed
+  // (filtered) sensors and sensors heard while MQTT is down.
+  Status_SensorValue(protocol, model, id, TelldusSensor_DataTypeToString(dataType), value);
+
   MqttClient* mqttclient = MqttClient_GetInstance();
   if( !MqttClient_IsConnected(mqttclient) )
   {

@@ -8,6 +8,7 @@
 #include "configjson.h"
 #include "stringutils.h"
 #include "mqttclient.h"
+#include "status.h"
 
 static MqttClient themqttclient;
 static bool created;
@@ -139,6 +140,7 @@ void MqttClient_Disconnect(MqttClient *self)
   mosquitto_disconnect( self->mosq );
   Log(TM_LOG_DEBUG, "mqtt disconnect");
   self->mqconn = TM_MQCONN_NONE;
+  Status_SetBroker(false);
 }
 
 
@@ -391,6 +393,7 @@ static void on_connect(struct mosquitto* mosq, void* obj, int reason_code)
   /* You may wish to set a flag here to indicate to your application that the
    * client is now connected. */
   self->mqconn = TM_MQCONN_OK;
+  Status_SetBroker(true);
 
   TelldusClient* telldusclient = TelldusClient_GetInstance();
   int deviceNo = TelldusClient_GetDeviceNo(telldusclient, TM_DEVICE_GET_FIRST);
@@ -407,6 +410,7 @@ static void on_disconnect(struct mosquitto* mosq, void* obj, int reason_code)
 {
   MqttClient* self = (MqttClient*) obj;
   self->mqconn = TM_MQCONN_NONE;
+  Status_SetBroker(false);
   Log(TM_LOG_DEBUG, "on_disconnect");
 }
 

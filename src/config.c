@@ -96,7 +96,28 @@ char* Config_GetTopicTranslation(Config* self, char* ioString)
   }
   else
   {
-   Log(TM_LOG_ERROR, "Property topic-translation was not a found array");
+    // topic-translation is optional
+    Log(TM_LOG_DEBUG, "Property topic-translation was not a found array");
+  }
+  return NULL;
+}
+
+const char* Config_FindTopicTranslation(Config* self, const char* telldusTopic, const char** name)
+{
+  cJSON* item = cJSON_GetObjectItem(self->configJson.json, "topic-translation");
+  int arrSize = cJSON_IsArray(item) ? cJSON_GetArraySize(item) : 0;
+
+  *name = NULL;
+  for( int i = 0; i < arrSize; i++ )
+  {
+    cJSON* arrItem = cJSON_GetArrayItem(item, i);
+    char* find = cJSON_GetStringValue(cJSON_GetObjectItem(arrItem, "telldus"));
+    char* replace = cJSON_GetStringValue(cJSON_GetObjectItem(arrItem, "mqtt"));
+    if( find != NULL && replace != NULL && strcmp(find, telldusTopic) == 0 )
+    {
+      *name = cJSON_GetStringValue(cJSON_GetObjectItem(arrItem, "name"));
+      return replace;
+    }
   }
   return NULL;
 }
