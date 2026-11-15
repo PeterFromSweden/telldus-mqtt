@@ -1,6 +1,6 @@
 # telldus-mqtt plan
 
-Date: 2026-10-06. Replaces ARCHITECTURE_REVIEW.md (2025-11-30).
+Date: 2026-11-15. Replaces ARCHITECTURE_REVIEW.md (2025-11-30).
 
 ## Done
 - #6 Old retained topics: cleared when a mapping is added (PR #9).
@@ -8,6 +8,42 @@ Date: 2026-10-06. Replaces ARCHITECTURE_REVIEW.md (2025-11-30).
 - Tests: TellStick simulator and broker tests run with ctest (PR #7).
 - Setup script for build dependencies (PR #7).
 - Sensor offline time is configurable (`sensor-offline-seconds`).
+
+## OpenWrt without config files
+Goal: a new user sets up everything in LuCI. No file edits.
+
+LuCI page:
+- Sensors heard, with last values. The user types a name. The topic comes from the name (can be changed). A name publishes the sensor. Unnamed sensors stay filtered.
+- Replace: move a name to a new sensor ID (after battery change).
+- Button capture: press a remote button, see protocol/house/unit, make a switch from it.
+- Status: service, TellStick, telldusd, broker, time since last RF message. Restart button.
+- Broker settings: host, port, user, pass. Default 127.0.0.1:1883. Broker setup: link to luci-app-mosquitto (exists in openwrt/luci 23.05, 24.10, 25.12).
+
+Design:
+- Settings in UCI `/etc/config/telldus-mqtt`: one main section, one section per named sensor/switch. No Telldus-specific names where it costs nothing (a Zigbee gateway can use the same layout later).
+- The daemon reads JSON. At start, procd runs a ucode script: UCI -> JSON. A migration script: telldus-mqtt.json -> UCI.
+- The daemon writes a status file in /var/run: seen sensors, last values, recent raw RF events, connection state. LuCI reads it (MQTT has no unnamed sensors).
+- ucode and a JS LuCI view. No Lua.
+
+Location:
+- This repo: daemon, `openwrt/` (generator, migration), `luci-app-telldus-mqtt/` (moves to openwrt/luci when the status format is stable).
+- openwrt/packages `utils/telldus-mqtt`: Makefile, init script, default UCI config (Peter, later PR).
+
+Steps, one PR each:
+1. `--config <path>` option, with tests.
+2. Status file: seen sensors, last values, connection state. Peter approves the format first.
+3. Raw RF events in the status file.
+4. UCI layout, generator, migration. Peter approves the layout first.
+5. tellstick.conf from UCI.
+6. LuCI page. Peter tests it on a router.
+
+The openwrt/packages PR needs:
+- Makefile: depends on ucode, ucode-mod-uci, ucode-mod-fs. Install `openwrt/` scripts. Conffile `/etc/config/telldus-mqtt`.
+- Default `/etc/config/telldus-mqtt` (broker 127.0.0.1:1883).
+- uci-defaults script: run the migration once if telldus-mqtt.json exists.
+- Init script: run the generator, start with `--config /var/etc/telldus-mqtt.json`, respawn, reload on UCI change.
+- Step 5: write tellstick.conf while telldusd is stopped (telldusd also writes it), then start telldusd.
+- Remove `telldus-mqtt-watchdog.sh` when the status file has the time since the last RF message (the script has the topic "Hemma" hard-coded).
 
 ## Next
 1. #5 Robust set: now one resend after 1 s. Find out if telldus-core repeats. If not, add more resends with a small random delay. Make the count a config value.
