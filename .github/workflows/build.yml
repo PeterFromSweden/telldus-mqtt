@@ -18,6 +18,8 @@ jobs:
         run: cmake -B build && cmake --build build -j"$(nproc)"
       - name: Test
         run: cd build && ctest --output-on-failure
+      - name: Test LuCI logic
+        run: node luci-app-telldus-mqtt/tests/check-syntax.js && node luci-app-telldus-mqtt/tests/test-logic.js
 
   openwrt:
     name: OpenWrt ${{ matrix.sdk }}
