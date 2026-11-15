@@ -42,7 +42,11 @@ The openwrt/packages PR needs:
 - Default `/etc/config/telldus-mqtt`: `config main 'main'` with enabled 1, host 127.0.0.1, port 1883, user/pass empty, offline_seconds 600, topic_prefix home.
 - uci-defaults script: if telldus-mqtt.json exists, run `ucode .../telldus-mqtt-json2uci.uc /etc/telldus-mqtt/telldus-mqtt.json`. It does nothing if the UCI config has device sections.
 - Init script: run `ucode .../telldus-mqtt-uci2json.uc /var/etc/telldus-mqtt.json` (writes mode 0600, exit code not 0 on error), start with `--config /var/etc/telldus-mqtt.json`, respawn, reload on UCI change. No `-` options after the script name (ucode reads them).
-- Step 5: write tellstick.conf while telldusd is stopped (telldusd also writes it), then start telldusd.
+- Step 5, switches in tellstick.conf:
+  - Makefile: also install `telldus-mqtt-uci2tellstick.uc`, `telldus-mqtt-tellstick2uci.uc` and `telldus-mqtt-tellstick.uc` (same directory).
+  - Init script: before the daemon starts, run `ucode .../telldus-mqtt-uci2tellstick.uc`. If it prints `changed`, restart telldusd. If the exit code is not 0, log it and start without a change. Also run it on a UCI change (reload).
+  - uci-defaults: after json2uci, run `ucode .../telldus-mqtt-tellstick2uci.uc /etc/tellstick.conf /etc/config "$serial"`. `serial` is from the status file of a daemon that ran before: `jsonfilter -i /var/run/telldus-mqtt.json -e '@.gateway.serial'`.
+  - Limits: on a first install, there is no status file, so there is no serial. Then the import works only if each switch id has one section, or one section without `gateway`. Else it stops with an error and changes nothing; the user runs it again with the serial. The controller sections of tellstick.conf do not tell which TellStick is on this router. telldusd reads tellstick.conf only at start, and writes all of it from memory (for example for a new controller). Thus restart telldusd at once after `changed`: a telldusd with the old devices can write them back. Then the next run prints `changed` again and the restart corrects it. Not tested on a router.
 - Remove `telldus-mqtt-watchdog.sh` when the status file has the time since the last RF message (the script has the topic "Hemma" hard-coded).
 
 ## Next
