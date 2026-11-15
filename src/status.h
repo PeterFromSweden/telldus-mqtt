@@ -12,6 +12,8 @@
 #define STATUS_FORMAT       1
 #define STATUS_MAX_DEVICES  64  // Sensors and switches
 #define STATUS_MAX_VALUES   4   // Datatypes per sensor
+#define STATUS_MAX_EVENTS   20  // Raw RF command events
+#define STATUS_EVENT_LEN    160 // Raw event text, longer is cut
 
 // Enable the status file. Call after the config is loaded. Returns 0 on success.
 int Status_Init(const char* path);
@@ -28,7 +30,8 @@ void Status_SensorValue(const char* protocol, const char* model, int id, const c
 void Status_AddSwitch(int deviceNumber);
 void Status_SwitchValue(int deviceNumber, const char* state);
 
-// A raw RF message was received
+// A raw RF message was received, e.g. "class:command;protocol:arctech;...;".
+// Command events are listed, newest first. Sensor events only set last_rf.
 void Status_RawEvent(const char* data);
 
 // Write the file if something changed, at most one time per second.

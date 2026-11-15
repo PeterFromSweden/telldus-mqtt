@@ -191,6 +191,196 @@ static int testLastRf(void)
   return 0;
 }
 
+static cJSON* getEvents(cJSON* status)
+{
+  return cJSON_GetObjectItem(status, "events");
+}
+
+// Raw RF command events are listed newest first, with the raw keys as strings
+static int testEvents(void)
+{
+  // From testLastRf
+  cJSON* status = readStatus();
+  CHECK( status != NULL );
+  CHECK( cJSON_GetArraySize(getEvents(status)) == 1 );
+  cJSON_Delete(status);
+
+  time_t before = time(NULL);
+  TelldusSim_RawDeviceEvent("class:command;protocol:arctech;model:selflearning;house:15858734;unit:1;group:0;method:turnon;");
+  // Spaces are trimmed, other keys are kept as they are
+  TelldusSim_RawDeviceEvent(" class : command ; protocol:sartano; model:codeswitch; code:0111010000 ;");
+  CHECK( Status_Write() == 0 );
+  status = readStatus();
+  CHECK( status != NULL );
+  CHECK( cJSON_GetArraySize(getEvents(status)) == 3 );
+  cJSON* newest = cJSON_GetArrayItem(getEvents(status), 0);
+  CHECK( cJSON_GetArraySize(newest) == 5 );
+  CHECK( cJSON_IsNumber(cJSON_GetObjectItem(newest, "time")) );
+  CHECK( getNumber(newest, "time") >= before );
+  CHECK( getNumber(newest, "time") <= time(NULL) );
+  CHECK( strEq(getString(newest, "class"), "command") );
+  CHECK( strEq(getString(newest, "protocol"), "sartano") );
+  CHECK( strEq(getString(newest, "model"), "codeswitch") );
+  CHECK( strEq(getString(newest, "code"), "0111010000") );
+  cJSON* event = cJSON_GetArrayItem(getEvents(status), 1);
+  CHECK( cJSON_GetArraySize(event) == 8 );
+  CHECK( strEq(getString(event, "class"), "command") );
+  CHECK( strEq(getString(event, "protocol"), "arctech") );
+  CHECK( strEq(getString(event, "model"), "selflearning") );
+  CHECK( strEq(getString(event, "house"), "15858734") );
+  CHECK( strEq(getString(event, "unit"), "1") );
+  CHECK( strEq(getString(event, "group"), "0") );
+  CHECK( strEq(getString(event, "method"), "turnon") );
+  CHECK( strEq(getString(cJSON_GetArrayItem(getEvents(status), 2), "house"), "1") );
+  cJSON_Delete(status);
+  return 0;
+}
+
+// Sensor events are not listed, but set last_rf
+static int testSensorEventNotListed(void)
+{
+  CHECK( Status_Write() == 0 );
+  cJSON* status = readStatus();
+  CHECK( status != NULL );
+  double lastRf = getNumber(status, "last_rf");
+  cJSON_Delete(status);
+
+  MyThread_Sleep(1100);
+  TelldusSim_RawDeviceEvent("class:sensor;protocol:fineoffset;id:167;model:temperaturehumidity;humidity:44;temp:15.8;");
+  CHECK( Status_Write() == 0 );
+  status = readStatus();
+  CHECK( status != NULL );
+  CHECK( getNumber(status, "last_rf") > lastRf );
+  CHECK( cJSON_GetArraySize(getEvents(status)) == 3 );
+  CHECK( strEq(getString(cJSON_GetArrayItem(getEvents(status), 0), "protocol"), "sartano") );
+  cJSON_Delete(status);
+  return 0;
+}
+
+// The same message again only updates the time of the newest entry
+static int testEventDuplicate(void)
+{
+  const char* raw = "class:command;protocol:arctech;model:selflearning;house:42;unit:2;group:0;method:turnoff;";
+  TelldusSim_RawDeviceEvent(raw);
+  CHECK( Status_Write() == 0 );
+  cJSON* status = readStatus();
+  CHECK( status != NULL );
+  CHECK( cJSON_GetArraySize(getEvents(status)) == 4 );
+  double first = getNumber(cJSON_GetArrayItem(getEvents(status), 0), "time");
+  cJSON_Delete(status);
+
+  MyThread_Sleep(1100);
+  TelldusSim_RawDeviceEvent(raw);
+  TelldusSim_RawDeviceEvent(raw);
+  CHECK( Status_Write() == 0 );
+  status = readStatus();
+  CHECK( status != NULL );
+  CHECK( cJSON_GetArraySize(getEvents(status)) == 4 );
+  cJSON* newest = cJSON_GetArrayItem(getEvents(status), 0);
+  CHECK( strEq(getString(newest, "house"), "42") );
+  CHECK( getNumber(newest, "time") > first );
+  cJSON_Delete(status);
+
+  // Not the newest: a new entry
+  TelldusSim_RawDeviceEvent("class:command;protocol:arctech;model:selflearning;house:15858734;unit:1;group:0;method:turnon;");
+  TelldusSim_RawDeviceEvent(raw);
+  CHECK( Status_Write() == 0 );
+  status = readStatus();
+  CHECK( status != NULL );
+  CHECK( cJSON_GetArraySize(getEvents(status)) == 6 );
+  CHECK( strEq(getString(cJSON_GetArrayItem(getEvents(status), 0), "house"), "42") );
+  CHECK( strEq(getString(cJSON_GetArrayItem(getEvents(status), 1), "house"), "15858734") );
+  cJSON_Delete(status);
+  return 0;
+}
+
+// Only the newest STATUS_MAX_EVENTS events are kept
+static int testEventMax(void)
+{
+  for( int i = 0; i < STATUS_MAX_EVENTS + 5; i++ )
+  {
+    char raw[100];
+    snprintf(raw, sizeof(raw), "class:command;protocol:arctech;model:codeswitch;house:A;unit:%i;method:turnon;", i);
+    TelldusSim_RawDeviceEvent(raw);
+  }
+  CHECK( Status_Write() == 0 );
+  cJSON* status = readStatus();
+  CHECK( status != NULL );
+  cJSON* events = getEvents(status);
+  CHECK( cJSON_GetArraySize(events) == STATUS_MAX_EVENTS );
+  for( int i = 0; i < STATUS_MAX_EVENTS; i++ )
+  {
+    char unit[12];
+    snprintf(unit, sizeof(unit), "%i", STATUS_MAX_EVENTS + 4 - i);
+    CHECK( strEq(getString(cJSON_GetArrayItem(events, i), "unit"), unit) );
+  }
+  cJSON_Delete(status);
+  return 0;
+}
+
+// Bad raw text does not crash and gives a valid file
+static int testEventMalformed(void)
+{
+  char longRaw[400];
+  snprintf(longRaw, sizeof(longRaw), "class:command;protocol:x;");
+  while( strlen(longRaw) < sizeof(longRaw) - 20 )
+  {
+    strcat(longRaw, "abcdefgh:12345678;");
+  }
+  char longValue[400];
+  snprintf(longValue, sizeof(longValue), "class:command;protocol:");
+  memset(longValue + strlen(longValue), 'v', sizeof(longValue) - strlen(longValue) - 1);
+  longValue[sizeof(longValue) - 1] = '\0';
+
+  // Not listed: no class:command
+  TelldusSim_RawDeviceEvent("");
+  TelldusSim_RawDeviceEvent(";;;");
+  TelldusSim_RawDeviceEvent(" ; ;: ;:;");
+  TelldusSim_RawDeviceEvent("no colon at all");
+  TelldusSim_RawDeviceEvent("class;command;");
+  TelldusSim_RawDeviceEvent("class:");
+  CHECK( Status_Write() == 0 );
+  cJSON* status = readStatus();
+  CHECK( status != NULL );
+  CHECK( strEq(getString(cJSON_GetArrayItem(getEvents(status), 0), "unit"), "24") );
+  cJSON_Delete(status);
+
+  // Listed: bad parts are skipped, "time" from the raw text is not used
+  time_t before = time(NULL);
+  TelldusSim_RawDeviceEvent("junk;:empty;class:command;;novalue:;time:5;a:b:c;class:sensor;method:turnon");
+  TelldusSim_RawDeviceEvent(longRaw);
+  TelldusSim_RawDeviceEvent(longValue);
+  CHECK( Status_Write() == 0 );
+  status = readStatus();
+  CHECK( status != NULL );
+  cJSON* events = getEvents(status);
+  CHECK( cJSON_GetArraySize(events) == STATUS_MAX_EVENTS );
+
+  cJSON* event = cJSON_GetArrayItem(events, 0);
+  CHECK( cJSON_GetArraySize(event) == 2 ); // The part cut in the middle is not listed
+  CHECK( strEq(getString(event, "class"), "command") );
+
+  event = cJSON_GetArrayItem(events, 1);
+  CHECK( strEq(getString(event, "protocol"), "x") );
+  CHECK( strEq(getString(event, "abcdefgh"), "12345678") ); // Cut after a complete part
+
+  event = cJSON_GetArrayItem(events, 2);
+  CHECK( cJSON_GetArraySize(event) == 5 );
+  CHECK( getNumber(event, "time") >= before );
+  CHECK( strEq(getString(event, "class"), "command") );
+  CHECK( strEq(getString(event, "novalue"), "") );
+  CHECK( strEq(getString(event, "a"), "b:c") );
+  CHECK( strEq(getString(event, "method"), "turnon") );
+  cJSON_Delete(status);
+
+  char* text = readText(statusFile);
+  CHECK( text != NULL );
+  bool cut = strstr(text, "vvvv") == NULL && strstr(text, "abcdefgh") != NULL;
+  free(text);
+  CHECK( cut );
+  return 0;
+}
+
 static int testSensors(void)
 {
   // Named sensor: two datatypes in one entry
@@ -376,6 +566,11 @@ int main(void)
   {
     res |= testConnect();
     res |= testLastRf();
+    res |= testEvents();
+    res |= testSensorEventNotListed();
+    res |= testEventDuplicate();
+    res |= testEventMax();
+    res |= testEventMalformed();
     res |= testSensors();
     res |= testSwitches();
     res |= testNoSecrets();
