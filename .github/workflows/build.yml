@@ -26,14 +26,14 @@ jobs:
       fail-fast: false
       matrix:
         sdk:
-          - arm_cortex-a9_vfpv3-d16-openwrt-23.05 # mvebu cortexa9 (opkg)
-          - arm_cortex-a9_vfpv3-d16-openwrt-24.10 # mvebu cortexa9 (opkg)
+          - mvebu-cortexa9-23.05.2       # Linksys WRT3200ACM
+          - mvebu-cortexa9-openwrt-24.10
     steps:
       - uses: actions/checkout@v4
         with:
           path: src
 
-      # Uses the package Makefile from the openwrt/packages feed,
+      # Uses the package Makefile from openwrt/packages master,
       # with the source replaced by this checkout.
       - name: Build in OpenWrt SDK
         run: |
@@ -49,7 +49,11 @@ jobs:
                 feeds.conf.default > feeds.conf
             ./scripts/feeds update -a
             ./scripts/feeds install -a
-            mk=$(readlink -f package/feeds/packages/telldus-mqtt)/Makefile
+            rm -f package/feeds/packages/telldus-mqtt
+            git clone --depth 1 --filter=blob:none --sparse https://github.com/openwrt/packages /tmp/packages
+            git -C /tmp/packages sparse-checkout set utils/telldus-mqtt
+            cp -r /tmp/packages/utils/telldus-mqtt package/telldus-mqtt
+            mk=package/telldus-mqtt/Makefile
             sed -i -e "/^PKG_SOURCE_PROTO/d" -e "/^PKG_SOURCE_URL/d" \
                    -e "/^PKG_SOURCE_VERSION/d" -e "/^PKG_MIRROR_HASH/d" "$mk"
             sed -i "/^\$(eval \$(call BuildPackage/i define Build/Prepare\n\tmkdir -p \$(PKG_BUILD_DIR)\n\tcp -r /src/. \$(PKG_BUILD_DIR)\n\trm -rf \$(PKG_BUILD_DIR)/.git \$(PKG_BUILD_DIR)/build\nendef\n" "$mk"
