@@ -1,6 +1,7 @@
 #ifndef TELLDUSSENSOR_H_
 #define TELLDUSSENSOR_H_
 
+#include <stdbool.h>
 #include "mytimer.h"
 
 typedef enum {
@@ -25,6 +26,7 @@ typedef struct {
   char value[10];
   int timestamp;
   bool online;
+  bool filtered;   // No name and filter-non-transled: not published
 } TelldusSensor;
 
 // Callbacks are static methods with context as telldusclient instance reference

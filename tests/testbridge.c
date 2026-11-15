@@ -194,7 +194,26 @@ static pid_t startBroker(const char* path, int port)
   return pid;
 }
 
-static bool writeConfig(const char* filename, int port)
+// Topics that a device without a name may not use when filtered
+static bool hasTopicWith(const char* part)
+{
+  bool found = false;
+  pthread_mutex_lock(&msgLock);
+  for( int i = 0; i < messageCount; i++ )
+  {
+    if( strstr(messages[i].topic, part) != NULL )
+    {
+      found = true;
+    }
+  }
+  pthread_mutex_unlock(&msgLock);
+  return found;
+}
+
+// Modes: "translation" names the devices with topic-translation,
+// "devices" with the devices list (same result expected), "filter" as
+// "devices" with filter-non-transled: devices without a name are not published.
+static bool writeConfig(const char* filename, int port, const char* mode)
 {
   FILE* f = fopen(filename, "wt");
   if( f == NULL )
@@ -207,20 +226,42 @@ static bool writeConfig(const char* filename, int port)
     "  \"port\": %d,\n"
     "  \"user\": \"\",\n"
     "  \"pass\": \"\",\n"
-    "  \"sensor-offline-seconds\": 600,\n"
-    "  \"topic-translation\": [\n"
-    "    {\n"
-    "      \"telldus\": \"telldus/" SERIAL "/sensor/fineoffset_temperaturehumidity_135\",\n"
-    "      \"mqtt\": \"Home/Shed\",\n"
-    "      \"name\": \"Shed\"\n"
-    "    },\n"
-    "    {\n"
-    "      \"telldus\": \"telldus/" SERIAL "/switch/2\",\n"
-    "      \"mqtt\": \"Home/Lamp\",\n"
-    "      \"name\": \"Lamp\"\n"
-    "    }\n"
-    "  ]\n"
-    "}\n", port);
+    "  \"sensor-offline-seconds\": 600,\n", port);
+  if( strcmp(mode, "translation") == 0 )
+  {
+    fprintf(f,
+      "  \"topic-translation\": [\n"
+      "    {\n"
+      "      \"telldus\": \"telldus/" SERIAL "/sensor/fineoffset_temperaturehumidity_135\",\n"
+      "      \"mqtt\": \"Home/Shed\",\n"
+      "      \"name\": \"Shed\"\n"
+      "    },\n"
+      "    {\n"
+      "      \"telldus\": \"telldus/" SERIAL "/switch/2\",\n"
+      "      \"mqtt\": \"Home/Lamp\",\n"
+      "      \"name\": \"Lamp\"\n"
+      "    }\n"
+      "  ]\n"
+      "}\n");
+  }
+  else
+  {
+    // Entries for another TellStick (gateway) must not be used
+    fprintf(f,
+      "  %s"
+      "  \"devices\": [\n"
+      "    { \"type\": \"switch\", \"id\": \"2\", \"name\": \"Other\", \"topic\": \"Other/Lamp\", \"gateway\": \"OTHERSERIAL\" },\n"
+      "    { \"type\": \"sensor\", \"id\": \"fineoffset_temperaturehumidity_77\", \"name\": \"Other\", \"topic\": \"Other/77\", \"gateway\": \"OTHERSERIAL\" },\n"
+      "    { \"type\": \"sensor\", \"id\": \"fineoffset_temperaturehumidity_135\", \"name\": \"Shed\", \"topic\": \"Home/Shed\" },\n"
+      "    { \"type\": \"switch\", \"id\": \"2\", \"name\": \"Lamp\", \"topic\": \"Home/Lamp\", \"gateway\": \"" SERIAL "\" }\n"
+      "  ],\n"
+      // devices wins over topic-translation
+      "  \"topic-translation\": [\n"
+      "    { \"telldus\": \"telldus/" SERIAL "/switch/2\", \"mqtt\": \"Old/Lamp\", \"name\": \"Old\" }\n"
+      "  ]\n"
+      "}\n",
+      strcmp(mode, "filter") == 0 ? "\"filter-non-transled\": \"yes\",\n" : "");
+  }
   fclose(f);
   return true;
 }
@@ -229,8 +270,15 @@ int main(int argc, char* argv[])
 {
   if( argc < 2 )
   {
-    printf("Usage: testbridge <mosquitto>\n");
+    printf("Usage: testbridge <mosquitto> [translation|devices|filter]\n");
     return SKIP;
+  }
+  const char* mode = argc > 2 ? argv[2] : "translation";
+  bool filter = strcmp(mode, "filter") == 0;
+  if( !filter && strcmp(mode, "translation") != 0 && strcmp(mode, "devices") != 0 )
+  {
+    printf("Unknown mode %s\n", mode);
+    return 1;
   }
 
   int res = 0;
@@ -244,7 +292,7 @@ int main(int argc, char* argv[])
   MqttClient* mqttclient = NULL;
 
   Log_Init(TM_LOG_CONSOLE, "testbridge", TM_LOG_DEBUG, false);
-  if( !writeConfig(configFile, port) )
+  if( !writeConfig(configFile, port, mode) )
   {
     printf("Could not write %s\n", configFile);
     return 1;
@@ -298,24 +346,40 @@ int main(int argc, char* argv[])
   mqttclient = MqttClient_GetInstance();
   CHECK( MqttClient_Connect(mqttclient) == 0 );
 
-  // Devices are announced to Home Assistant on connect
-  CHECK( waitFor("homeassistant/switch/" SERIAL "_device_1/config",
-                 "\"command_topic\":\t\"telldus/" SERIAL "/switch/1/set\"") );
-
   // A translated device clears its old default retained state topic
   CHECK( waitFor("homeassistant/switch/" SERIAL "_device_2/config",
                  "\"command_topic\":\t\"Home/Lamp/set\"") );
+  CHECK( waitFor("homeassistant/switch/" SERIAL "_device_2/config",
+                 "\"name\":\t\"Lamp\"") );
   CHECK( waitForCleared("telldus/" SERIAL "/switch/2/state") );
   CHECK( !wasCleared("telldus/" SERIAL "/switch/1/state") );
 
-  // A sensor without translation gets the default topics
+  // Devices are announced to Home Assistant on connect, unnamed ones only without filter
+  if( filter )
+  {
+    CHECK( !hasTopicWith("_device_1/") );
+  }
+  else
+  {
+    CHECK( waitFor("homeassistant/switch/" SERIAL "_device_1/config",
+                   "\"command_topic\":\t\"telldus/" SERIAL "/switch/1/set\"") );
+  }
+
+  // A sensor without translation gets the default topics (without filter)
   TelldusSim_SensorEvent("fineoffset", "temperaturehumidity", 77, TELLSTICK_HUMIDITY, "55");
-  CHECK( waitFor("homeassistant/sensor/" SERIAL "_fineoffset_temperaturehumidity_77_Humidity/config", NULL) );
-  CHECK( waitFor("telldus/" SERIAL "/sensor/fineoffset_temperaturehumidity_77/Humidity", "55") );
-  CHECK( waitFor("telldus/" SERIAL "/sensor/fineoffset_temperaturehumidity_77/status", "online") );
+  if( !filter )
+  {
+    CHECK( waitFor("homeassistant/sensor/" SERIAL "_fineoffset_temperaturehumidity_77_Humidity/config", NULL) );
+    CHECK( waitFor("telldus/" SERIAL "/sensor/fineoffset_temperaturehumidity_77/Humidity", "55") );
+    CHECK( waitFor("telldus/" SERIAL "/sensor/fineoffset_temperaturehumidity_77/status", "online") );
+  }
 
   // A translated sensor gets the user defined topic and name
   TelldusSim_SensorEvent("fineoffset", "temperaturehumidity", 135, TELLSTICK_TEMPERATURE, "21.5");
+  CHECK( waitFor("homeassistant/sensor/" SERIAL "_fineoffset_temperaturehumidity_135_Temperature/config",
+                 "\"name\":\t\"Shed\"") );
+  CHECK( waitFor("homeassistant/sensor/" SERIAL "_fineoffset_temperaturehumidity_135_Temperature/config",
+                 "\"state_topic\":\t\"Home/Shed/Temperature\"") );
   CHECK( waitFor("Home/Shed/Temperature", "21.5") );
   CHECK( waitFor("Home/Shed/status", "online") );
   CHECK( waitForCleared("telldus/" SERIAL "/sensor/fineoffset_temperaturehumidity_135/status") );
@@ -324,18 +388,39 @@ int main(int argc, char* argv[])
 
   // Home Assistant switches the device on: TellStick sends, state is reported back
   mosquitto_publish(observer, NULL, "telldus/" SERIAL "/switch/1/set", 2, "ON", 0, false);
-  CHECK( waitFor("telldus/" SERIAL "/switch/1/state", "ON") );
-  CHECK( TelldusSim_GetTurnOnCount(1) >= 1 );
+  if( filter )
+  {
+    // Not subscribed: no command handling. Use the named switch instead.
+    mosquitto_publish(observer, NULL, "Home/Lamp/set", 2, "ON", 0, false);
+    CHECK( waitFor("Home/Lamp/state", "ON") );
+    CHECK( TelldusSim_GetTurnOnCount(2) >= 1 );
+    CHECK( TelldusSim_GetTurnOnCount(1) == 0 );
+  }
+  else
+  {
+    CHECK( waitFor("telldus/" SERIAL "/switch/1/state", "ON") );
+    CHECK( TelldusSim_GetTurnOnCount(1) >= 1 );
 
-  // An empty payload (e.g. clearing a retained topic) must be ignored
-  mosquitto_publish(observer, NULL, "telldus/" SERIAL "/switch/1/set", 0, NULL, 0, false);
-  mosquitto_publish(observer, NULL, "telldus/" SERIAL "/switch/1/set", 3, "OFF", 0, false);
-  CHECK( waitFor("telldus/" SERIAL "/switch/1/state", "OFF") );
-  CHECK( TelldusSim_GetTurnOffCount(1) >= 1 );
+    // An empty payload (e.g. clearing a retained topic) must be ignored
+    mosquitto_publish(observer, NULL, "telldus/" SERIAL "/switch/1/set", 0, NULL, 0, false);
+    mosquitto_publish(observer, NULL, "telldus/" SERIAL "/switch/1/set", 3, "OFF", 0, false);
+    CHECK( waitFor("telldus/" SERIAL "/switch/1/state", "OFF") );
+    CHECK( TelldusSim_GetTurnOffCount(1) >= 1 );
+  }
 
   // A remote control press is forwarded to MQTT
   TelldusSim_DeviceEvent(1, TELLSTICK_TURNON);
   CHECK( MqttClient_IsConnected(mqttclient) );
+  if( filter )
+  {
+    // Unnamed: nothing published. The named switch after it shows the order.
+    TelldusSim_DeviceEvent(2, TELLSTICK_TURNOFF);
+    CHECK( waitFor("Home/Lamp/state", "OFF") );
+    CHECK( !hasTopicWith("/switch/1/state") ); // The observer itself sent switch/1/set
+    CHECK( !hasTopicWith("_77") );
+  }
+  CHECK( !hasTopicWith("Other/") );
+  CHECK( !hasTopicWith("Old/") );
 
   // Status file: broker state and names from the same config
   CHECK( Status_Write() == 0 );

@@ -5,7 +5,13 @@
 
 static bool isDelimiter(char c) 
 {
-  return isspace(c) || strchr(",.;:?!()\"'-_+=/\\*%&$€£¥@#~^`|<>=", c) != NULL;
+  return isspace((unsigned char) c) || strchr(",.;:?!()\"'-_+=/\\*%&$€£¥@#~^`|<>=", c) != NULL;
+}
+
+static bool isWordAt(const char* buffer, const char* pos, size_t findLen)
+{
+  return (pos == buffer || isDelimiter(*(pos - 1))) &&
+         (pos[findLen] == '\0' || isDelimiter(pos[findLen]));
 }
 
 // Replace all occurrences of find with replace in buffer
@@ -27,8 +33,7 @@ bool ReplaceWords(char *buffer, const char *find, const char *replace)
   while ((pos = strstr(pos, find)) != NULL)
   {
     // Check for word boundaries
-    if ((pos == buffer || isDelimiter(*(pos - 1))) && 
-        (pos[findLen] == '\0' || isDelimiter(pos[findLen])))
+    if (isWordAt(buffer, pos, (size_t) findLen))
     {
       memmove(pos + replaceLen, pos + findLen, strlen(pos + findLen) + 1);
       memcpy(pos, replace, replaceLen);
@@ -42,6 +47,38 @@ bool ReplaceWords(char *buffer, const char *find, const char *replace)
   }
 
   return ret;
+}
+
+// As ReplaceWords, for a buffer of bufferSize bytes. If the result does not
+// fit, the buffer is not changed and false is returned.
+bool ReplaceWordsSize(char* buffer, size_t bufferSize, const char* find, const char* replace)
+{
+  size_t findLen = strlen(find);
+  size_t replaceLen = strlen(replace);
+  size_t count = 0;
+
+  if( findLen == 0 )
+  {
+    return false;
+  }
+  for( const char* pos = strstr(buffer, find); pos != NULL; pos = strstr(pos, find) )
+  {
+    if( isWordAt(buffer, pos, findLen) )
+    {
+      count++;
+    }
+    pos += findLen;
+  }
+  if( count == 0 )
+  {
+    return false;
+  }
+  if( replaceLen > findLen &&
+      strlen(buffer) + count * (replaceLen - findLen) + 1 > bufferSize )
+  {
+    return false;
+  }
+  return ReplaceWords(buffer, find, replace);
 }
 
 void ReplaceWordList(char* buffer, const char* const find[], const char* const replace[])

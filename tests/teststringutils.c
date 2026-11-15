@@ -53,6 +53,25 @@ int test3(void)
   return strcmp( buffer, "homeassistant/light/Device-10/config homeassistant/light/lamp_bedroom/config");
 }
 
+// ReplaceWordsSize: no change when the result does not fit, empty find never matches
+int test4(void)
+{
+  char buffer[20] = "a/b a/bc a/b";
+  if( ReplaceWordsSize(buffer, sizeof(buffer), "a/b", "longer/x") ) // needs 23 bytes
+  {
+    return 1;
+  }
+  if( strcmp(buffer, "a/b a/bc a/b") != 0 || ReplaceWordsSize(buffer, sizeof(buffer), "", "x") )
+  {
+    return 1;
+  }
+  if( !ReplaceWordsSize(buffer, sizeof(buffer), "a/b", "c/d/e") ) // needs 17 bytes
+  {
+    return 1;
+  }
+  return strcmp(buffer, "c/d/e a/bc c/d/e");
+}
+
 int main(void)
 {
   int res = 0;
@@ -70,6 +89,12 @@ int main(void)
   }
 
   res = test3();
+  if( res != 0 )
+  {
+    return res;
+  }
+
+  res = test4();
   if( res != 0 )
   {
     return res;

@@ -146,7 +146,7 @@ void MqttClient_Disconnect(MqttClient *self)
 
 void MqttClient_AddSensor(MqttClient* self, TelldusSensor* sensor)
 {
-  char str[40];
+  char str[100];
   char* sernoPtr = TelldusClient_GetControllerSerial(TelldusClient_GetInstance());
 
   Log(TM_LOG_DEBUG, "AddSensor %s %s", 
@@ -188,16 +188,22 @@ void MqttClient_AddSensor(MqttClient* self, TelldusSensor* sensor)
   ConfigJson_FreeJson(&cj);
 
   // Translate default generated topics with user defined.
-  char* name = Config_GetTopicTranslation(self->config, ConfigJson_GetContent(&cj) );
-
-  if( name == NULL )
+  char sensorId[80];
+  snprintf(sensorId, sizeof(sensorId), "%s_%s_%s", sensor->protocol, sensor->model, sensor->id);
+  const char* name;
+  bool named = Config_TranslateTopics(self->config, sernoPtr, "sensor", sensorId,
+    ConfigJson_GetContent(&cj), (size_t) ConfigJson_GetContentMaxLen(&cj) - 1, &name);
+  sensor->filtered = !named && Config_FilterUnnamed(self->config);
+  if( sensor->filtered )
   {
-    // No match
-    ConfigJson_ParseContent(&cj);
+    Log(TM_LOG_DEBUG, "Sensor %s has no name => not published", str);
+    ConfigJson_Destroy(&cj);
+    return;
   }
-  else
+
+  ConfigJson_ParseContent(&cj);
+  if( name != NULL )
   {
-    ConfigJson_ParseContent(&cj);
     ConfigJson_SetStringFromPropList(&cj, 
       (const char * const []) {"sensor-config-content", "device", ""},
     "name", 
@@ -305,16 +311,20 @@ void MqttClient_AddDevice(MqttClient* self, TelldusDevice* device)
   ConfigJson_FreeJson(&cj);
 
   // Translate default generated topics with user defined.
-  char* name = Config_GetTopicTranslation(self->config, ConfigJson_GetContent(&cj) );
-
-  if( name == NULL )
+  const char* name;
+  bool named = Config_TranslateTopics(self->config, sernoPtr, "switch", device->device_no,
+    ConfigJson_GetContent(&cj), (size_t) ConfigJson_GetContentMaxLen(&cj) - 1, &name);
+  device->filtered = !named && Config_FilterUnnamed(self->config);
+  if( device->filtered )
   {
-    // No match
-    ConfigJson_ParseContent(&cj);
+    Log(TM_LOG_DEBUG, "Switch %s has no name => not published", str);
+    ConfigJson_Destroy(&cj);
+    return;
   }
-  else
+
+  ConfigJson_ParseContent(&cj);
+  if( name != NULL )
   {
-    ConfigJson_ParseContent(&cj);
     ConfigJson_SetStringFromPropList(&cj, 
       (const char * const []) {"device-config-content", "device", ""},
     "name", 

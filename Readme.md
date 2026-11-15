@@ -28,6 +28,16 @@ Bridge between Telldus 433 MHz devices and MQTT, with Home Assistant MQTT Discov
 ```
 - `sensor-offline-seconds`: a sensor is marked offline when silent this long.
 - `topic-translation` (optional): replaces the long topics with your own; `name` is the Home Assistant name.
+- `devices` (optional): names a device without the TellStick serial in the key. `type` is `sensor` or `switch`, `id` is the sensor id or the switch device number. `gateway` (optional) is a TellStick serial: the entry is then used only with that TellStick. If an entry in `devices` and in `topic-translation` match, `devices` is used.
+  ```json
+  "devices": [
+    { "type": "sensor", "id": "fineoffset_temperaturehumidity_135", "name": "Shed", "topic": "Home/Shed" },
+    { "type": "switch", "id": "2", "name": "Office", "topic": "Home/Office", "gateway": "A703AKOX" }
+  ]
+  ```
+- `filter-non-transled` (optional): `"yes"` publishes only the sensors and switches with an entry in `devices` or `topic-translation`. The status file (`--status`) shows all of them. Without it, all are published.
+
+On OpenWrt the settings are in UCI (`/etc/config/telldus-mqtt`). The init script makes the JSON file from UCI. See [openwrt/README.md](openwrt/README.md).
 
 `/etc/telldus-mqtt/telldus-mqtt-homeassistant.json` holds the discovery templates and normally needs no changes.
 
