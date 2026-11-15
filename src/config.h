@@ -10,6 +10,7 @@ typedef struct {
 Config* Config_GetInstance(void);
 void Config_Destroy(Config* self);
 int Config_Load(Config* self, char* configFilename);
+int Config_LoadFile(Config* self, const char* path);
 char* Config_GetStrPtr(Config* self, const char* const property);
 int Config_GetInt(Config* self, const char* const property);
 void Config_GetStr(Config* self, const char* const property, char* oValue, int valueLen);

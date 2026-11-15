@@ -36,6 +36,7 @@ static int log_level = TM_LOG_INFO;
 static bool log_time = false;
 static bool log_raw = false;
 static bool sig_exit = false;
+static const char* config_path = NULL;
 
 static void atexitFunction(void);
 static void signalHandler(int sig);
@@ -62,6 +63,11 @@ int main(int argc, char *argv[])
     {
       log_raw = true;
     }
+    else if( strcmp(argv[arg], "--config") == 0 && arg + 1 < argc )
+    {
+      arg++;
+      config_path = argv[arg];
+    }
     else if( strcmp(argv[arg], "--version") == 0 )
     {
       printf("telldus-mqtt %s\n", TELLDUS_MQTT_VERSION);
@@ -70,7 +76,7 @@ int main(int argc, char *argv[])
     else
     {
       printf("telldus-mqtt %s\n", TELLDUS_MQTT_VERSION);
-      printf("telldus-mqtt [--nodaemon] [--debug] [--logtime] [--raw] [--version]\n");
+      printf("telldus-mqtt [--nodaemon] [--debug] [--logtime] [--raw] [--config <path>] [--version]\n");
       exit(1);
     }
     arg++;
@@ -79,7 +85,14 @@ int main(int argc, char *argv[])
   Log(TM_LOG_INFO, "telldus-mqtt %s", TELLDUS_MQTT_VERSION);
 
   config = Config_GetInstance();
-  ASRT( !Config_Load(config, "telldus-mqtt.json") );
+  int configError = config_path != NULL ?
+    Config_LoadFile(config, config_path) :
+    Config_Load(config, "telldus-mqtt.json");
+  if( configError )
+  {
+    Log(TM_LOG_ERROR, "Cannot load config");
+    exit(1);
+  }
 
   telldusclient = TelldusClient_GetInstance();
   TelldusClient_SetLogRaw( telldusclient, log_raw );
