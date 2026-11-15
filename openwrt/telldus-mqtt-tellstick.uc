@@ -342,18 +342,45 @@ function quote(s) {
 	return out + '"';
 }
 
+// A device section. controller only if not 0 (the telldus-core default).
+// The parameters in the order of d.parameters.
 function format_device(d) {
 	let s = 'device {\n' +
 		sprintf('  id = %d\n', d.id) +
-		'  name = ' + quote(d.name) + '\n' +
-		sprintf('  controller = %d\n', d.controller) +
-		'  protocol = ' + quote(d.protocol) + '\n' +
+		'  name = ' + quote(d.name) + '\n';
+	if (d.controller)
+		s += sprintf('  controller = %d\n', d.controller);
+	s += '  protocol = ' + quote(d.protocol) + '\n' +
 		'  model = ' + quote(d.model) + '\n' +
 		'  parameters {\n';
-	for (let p in PARAMETERS)
-		if (d.parameters[p] != null)
+	for (let p in keys(d.parameters))
+		if (index(PARAMETERS, p) >= 0 && d.parameters[p] != null)
 			s += '    ' + p + ' = ' + quote(d.parameters[p]) + '\n';
 	return s + '  }\n}\n';
+}
+
+// Devices from UCI: a device that is in tellstick.conf (old, from parse())
+// already keeps its name, its controller and the order of its parameters.
+function keep_existing(devices, old) {
+	let by_id = {};
+	for (let o in old)
+		by_id[o.id] = o;
+	for (let d in devices) {
+		let o = by_id[d.id];
+		if (!o)
+			continue;
+		d.name = o.name;
+		d.controller = o.controller;
+		let params = {};
+		for (let p in keys(o.parameters))
+			if (d.parameters[p] != null)
+				params[p] = d.parameters[p];
+		for (let p in PARAMETERS)
+			if (d.parameters[p] != null)
+				params[p] = d.parameters[p];
+		d.parameters = params;
+	}
+	return devices;
 }
 
 // The parts that telldusd uses, for a compare
@@ -362,7 +389,7 @@ function canonical(d) {
 	for (let p in PARAMETERS)
 		if (d.parameters[p] != null)
 			params[p] = d.parameters[p];
-	return sprintf('%J', [ d.id, d.name, d.controller, d.protocol, d.model, params ]);
+	return sprintf('%J', [ d.id, d.name, d.controller || 0, d.protocol, d.model, params ]);
 }
 
 function same_devices(a, b) {
@@ -378,13 +405,25 @@ function is_space(c) {
 	return c == ' ' || c == '\t' || c == '\r';
 }
 
+function is_blank_line(text, pos) {
+	let e = pos;
+	while (e < length(text) && is_space(substr(text, e, 1)))
+		e++;
+	return (e < length(text) && substr(text, e, 1) == '\n') ? e + 1 : -1;
+}
+
 // Replace the device sections of text (parsed with parse()) by devices.
 // Everything else stays as it is. The new sections go where the first old
 // one was, or before the first controller section, or at the end.
+// Blank lines: a removed section takes the blank lines after it with it.
+// One blank line separates the new sections. One blank line follows the
+// last new section if the last old section had one after it.
 function replace_devices(text, parsed, devices) {
-	let block = '';
+	let parts = [];
 	for (let d in devices)
-		block += format_device(d);
+		push(parts, format_device(d));
+	let block = join('\n', parts);
+	let blank_after = false;
 
 	let spans = [];
 	for (let d in parsed.devices) {
@@ -400,7 +439,14 @@ function replace_devices(text, parsed, devices) {
 		    (le == length(text) || substr(text, le, 1) == '\n')) {
 			s = ls;
 			e = (le < length(text)) ? le + 1 : le;
+			blank_after = false;
+			for (let b = is_blank_line(text, e); b >= 0; b = is_blank_line(text, e)) {
+				e = b;
+				blank_after = true;
+			}
 		}
+		else
+			blank_after = false;
 		push(spans, [ s, e ]);
 	}
 
@@ -414,6 +460,9 @@ function replace_devices(text, parsed, devices) {
 	}
 	else
 		at = length(text);
+
+	if (block != '' && blank_after && spans[length(spans) - 1][1] < length(text))
+		block += '\n';
 
 	// A new section starts on a new line
 	if (block != '' && at > 0 && substr(text, at - 1, 1) != '\n')
@@ -491,7 +540,7 @@ function devices_from_uci(sections) {
 		let d = {
 			id: int(s.id),
 			name: (text(s.name) != '') ? s.name : 'switch ' + s.id,
-			controller: 0,
+			controller: null,
 			protocol: s.protocol,
 			model: text(s.model),
 			parameters: {}
@@ -539,6 +588,7 @@ return {
 	format_device: format_device,
 	same_devices: same_devices,
 	replace_devices: replace_devices,
+	keep_existing: keep_existing,
 	devices_from_uci: devices_from_uci,
 	ordered: ordered,
 	write_file: write_file

@@ -47,9 +47,10 @@ config device
 - `manage_switches`: `1` = the switches in UCI are the devices in tellstick.conf. Missing or `0`: tellstick.conf is not changed.
 - A `switch` section with `protocol` is a device in tellstick.conf. `id` is the device id (1 to 999999999). The ids must be different.
 - `model` and the parameters `devices`, `house`, `unit`, `code`, `system`, `units`, `fade` are optional. They are the same as in tellstick.conf.
-- A switch without `name` is in tellstick.conf (name `switch <id>`), but it is not published to MQTT.
+- A switch without `name` is in tellstick.conf, but it is not published to MQTT.
+- A device that is in tellstick.conf already keeps its name, its `controller` and the order of its parameters. A new device gets the UCI `name` (or `switch <id>`) and no `controller` (telldusd uses 0). Thus a change of the UCI name does not change tellstick.conf.
 - The import uses the switch section with the same id. If more sections have the id, it uses the section with `gateway` = the serial, else the section without `gateway`. If that is not clear, it changes nothing. With the serial, it does not use a section with another `gateway`. If there is no section, it adds a switch section without name.
-- Comments in a device section of tellstick.conf are deleted. The devices go where the first device section was. The device option `controller` is always `0`.
+- Comments in a device section of tellstick.conf are deleted. The devices go where the first device section was, with one blank line between them. The blank lines after an old device section are deleted. If the last old device section had a blank line after it, the last new one has one too.
 
 ## UCI layout
 ```

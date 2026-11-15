@@ -377,8 +377,8 @@ result = lib.devices_from_uci({
 });
 same(result.errors, [], 'devices_from_uci: no errors');
 same(result.devices, [
-	{ id: 3, name: 'switch 3', controller: 0, protocol: 'sartano', model: '', parameters: { code: '0101' } },
-	{ id: 12, name: 'Lamp', controller: 0, protocol: 'arctech', model: 'selflearning-switch',
+	{ id: 3, name: 'switch 3', controller: null, protocol: 'sartano', model: '', parameters: { code: '0101' } },
+	{ id: 12, name: 'Lamp', controller: null, protocol: 'arctech', model: 'selflearning-switch',
 		parameters: { house: '123', unit: '1' } }
 ], 'devices_from_uci: switches with protocol, sorted by id, unnamed gets a name');
 
@@ -487,45 +487,88 @@ check(fs.readfile(tconf + '/telldus-mqtt') == uciImported, 'second tellstick2uci
 check(run(generator, [ tmp + '/t.json', tconf ], out) == 0 && out.stderr == '', 'uci2json after import: no warnings');
 check(!length(filter(readjson(tmp + '/t.json').devices, d => d.id == '11')), 'uci2json: switch 11 not published');
 
-// Round trip: tellstick.conf -> UCI -> tellstick.conf
-check(run(uci2tellstick, [ tellstick, tconf ], out) == 0 && out.stdout == 'changed\n',
-	'uci2tellstick: changed (the names are from UCI)');
+// Round trip: tellstick.conf -> UCI -> tellstick.conf gives the same file
+check(run(uci2tellstick, [ tellstick, tconf ], out) == 0 && out.stdout == 'unchanged\n',
+	'uci2tellstick after import: unchanged');
+check(fs.readfile(tellstick) == fixtureText && fs.stat(tellstick).mode == 0600,
+	'uci2tellstick after import: file the same');
+
+// Only a UCI name changes: the name in tellstick.conf stays, unchanged
+c = cursor(tconf);
+let secs = {};
+c.foreach('telldus-mqtt', 'device', function(s) {
+	if (s.type == 'switch' && (s.gateway == 'AE01DHPQ' || s.gateway == null))
+		secs[s.id] = s['.name'];
+});
+c.set('telldus-mqtt', secs['2'], 'name', 'Arbetsrum');
+c.commit('telldus-mqtt');
+check(run(uci2tellstick, [ tellstick, tconf ], out) == 0 && out.stdout == 'unchanged\n',
+	'uci2tellstick: a name change only: unchanged');
+
+// An RF change: written, names, controller and blank lines stay
+function blank_lines(t) {
+	return length(match(t, /\n\n/g) || []);
+}
+c.set('telldus-mqtt', secs['2'], 'unit', '7');
+c.commit('telldus-mqtt');
+check(run(uci2tellstick, [ tellstick, tconf ], out) == 0 && out.stdout == 'changed\n', 'uci2tellstick: RF change');
 let tst = fs.stat(tellstick);
 check(tst && tst.mode == 0600, 'uci2tellstick keeps the file mode');
 check(!fs.stat(tellstick + '.tmp'), 'uci2tellstick: no temporary file left');
 let written = fs.readfile(tellstick);
-let back = parse_file(tellstick, 'round trip');
-same(rf(back.devices), rf(fixtureParsed.devices), 'round trip: same devices');
-same(map(back.devices, d => d.name), [ 'Hemma-motorvärmare', 'Hemma-arbetsrum', 'Hemma-sovrum', 'Hemma-belysning',
-	'Hemma-grill', 'Hemma-uteförråd', 'Hemma-L1', 'Hemma-L2', 'Hemma-L3', 'Hemma-C4', 'switch 11' ],
-	'round trip: names from UCI');
+let back = parse_file(tellstick, 'RF change');
+let expected = rf(fixtureParsed.devices);
+expected[1][3] = { house: '30341302', unit: '7' };
+same(rf(back.devices), expected, 'RF change: devices');
+same(map(back.devices, d => d.name), map(fixtureParsed.devices, d => d.name), 'RF change: names stay');
 check(lib.replace_devices(written, back, []) == lib.replace_devices(fixtureText, fixtureParsed, []),
-	'round trip: the other content (globals, controllers, comments) is the same');
-check(index(written, 'device {\n  id = 2\n  name = "Hemma-arbetsrum"\n  controller = 0\n  protocol = "arctech"\n' +
-	'  model = "selflearning-switch:nexa"\n  parameters {\n    house = "30341302"\n    unit = "2"\n  }\n}\n') >= 0,
-	'uci2tellstick: device format');
+	'RF change: the other content (globals, controllers, comments) is the same');
+check(index(written, '\n\n\n') < 0 && blank_lines(written) == blank_lines(fixtureText),
+	'RF change: the same number of blank lines');
+check(index(written, 'ignoreControllerConfirmation="false"\n\ndevice {\n  id = 1\n') >= 0,
+	'RF change: blank line after the header');
+check(index(written, '}\n\ndevice {\n  id = 2\n  name = "Arb"\n  protocol = "arctech"\n' +
+	'  model = "selflearning-switch:nexa"\n  parameters {\n    house = "30341302"\n    unit = "7"\n  }\n}\n\ndevice {') >= 0,
+	'RF change: device format, no controller line');
+check(index(written, 'name = "L4"\n  protocol = "risingsun"\n  model = "codeswitch:kjelloco"\n' +
+	'  parameters {\n    system = "1"\n    unit = "1"\n  }\n}\n') >= 0, 'RF change: parameter order stays');
+check(run(uci2tellstick, [ tellstick, tconf ], out) == 0 && out.stdout == 'unchanged\n' &&
+	fs.readfile(tellstick) == written, 'RF change, run again: unchanged');
 
-// Again: unchanged, the file is not written
-fs.chmod(tellstick, 0400);
-check(run(uci2tellstick, [ tellstick, tconf ], out) == 0 && out.stdout == 'unchanged\n', 'uci2tellstick: unchanged');
-check(fs.readfile(tellstick) == written && fs.stat(tellstick).mode == 0400, 'uci2tellstick unchanged: file not written');
-fs.chmod(tellstick, 0600);
+// A device with a controller keeps it
+fs.writefile(tellstick, replace(written, 'id = 3\n  name = "Sov"\n', 'id = 3\n  name = "Sov"\n  controller = 2\n'));
+check(run(uci2tellstick, [ tellstick, tconf ], out) == 0 && out.stdout == 'unchanged\n', 'controller 2: unchanged');
+c.set('telldus-mqtt', secs['3'], 'unit', '4');
+c.commit('telldus-mqtt');
+check(run(uci2tellstick, [ tellstick, tconf ], out) == 0 && out.stdout == 'changed\n', 'controller 2: RF change');
+back = parse_file(tellstick, 'controller 2');
+check(back.devices[2].controller == 2 && back.devices[2].parameters.unit == '4', 'controller 2 stays');
+written = fs.readfile(tellstick);
 
-// telldusd writes the file in its own format (cfg_print): still unchanged
+// telldusd writes the file in its own format (cfg_print), no blank lines: unchanged
 let cfgprint = replace(written, / = /g, '=');
+if (confusedump) {
+	system(quote(confusedump) + ' ' + quote(tellstick) + ' print >/dev/null 2>' + quote(tmp + '/cfgprint.conf'));
+	cfgprint = fs.readfile(tmp + '/cfgprint.conf');
+}
 fs.writefile(tellstick, cfgprint);
 check(run(uci2tellstick, [ tellstick, tconf ], out) == 0 && out.stdout == 'unchanged\n',
-	'uci2tellstick: other format, same devices: unchanged');
+	'uci2tellstick: telldusd format, same devices: unchanged');
 
-// A UCI change
-c = cursor(tconf);
-let sec11 = null;
-c.foreach('telldus-mqtt', 'device', function(s) { if (s.id == '11') sec11 = s['.name']; });
-c.set('telldus-mqtt', sec11, 'name', 'Kjell & "Co" \\ ${x}');
+// A new device gets the UCI name, quoted
+c.set('telldus-mqtt', 'new12', 'device');
+c.set('telldus-mqtt', 'new12', 'type', 'switch');
+c.set('telldus-mqtt', 'new12', 'id', '12');
+c.set('telldus-mqtt', 'new12', 'name', 'Kjell & "Co" \\ ${x}');
+c.set('telldus-mqtt', 'new12', 'protocol', 'arctech');
 c.commit('telldus-mqtt');
-check(run(uci2tellstick, [ tellstick, tconf ], out) == 0 && out.stdout == 'changed\n', 'uci2tellstick: UCI change');
-back = parse_file(tellstick, 'after a UCI change');
-check(back.devices[10].name == 'Kjell & "Co" \\ ${x}', 'uci2tellstick: name quoted');
+check(run(uci2tellstick, [ tellstick, tconf ], out) == 0 && out.stdout == 'changed\n', 'uci2tellstick: new device');
+written = fs.readfile(tellstick);
+back = parse_file(tellstick, 'new device');
+check(back.devices[11].name == 'Kjell & "Co" \\ ${x}' && back.devices[0].name == 'Motorv', 'new device: UCI name, quoted');
+check(index(written, '\n\n\n') < 0, 'telldusd format: no blank lines added in a row');
+check(run(uci2tellstick, [ tellstick, tconf ], out) == 0 && out.stdout == 'unchanged\n' &&
+	fs.readfile(tellstick) == written, 'new device, run again: unchanged');
 
 // Errors: duplicate id, bad id. The file is not changed.
 let before = fs.readfile(tellstick);
@@ -556,7 +599,7 @@ fs.mkdir(tmp + '/new', 0755);
 check(run(uci2tellstick, [ newconf, tconf ], out) == 0 && out.stdout == 'changed\n', 'uci2tellstick: new file');
 check(fs.stat(newconf) && fs.stat(newconf).mode == 0644, 'uci2tellstick: new file mode 0644');
 let fresh = parse_file(newconf, 'new file');
-check(fresh.globals.user == 'root' && fresh.globals.group == 'root' && length(fresh.devices) == 11,
+check(fresh.globals.user == 'root' && fresh.globals.group == 'root' && length(fresh.devices) == 12 && fresh.devices[0].name == 'Hemma-motorvärmare',
 	'uci2tellstick: new file content');
 
 // No devices in UCI: all device sections are removed, controllers stay
