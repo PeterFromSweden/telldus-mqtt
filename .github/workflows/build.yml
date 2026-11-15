@@ -61,7 +61,6 @@ jobs:
             make defconfig
             make package/telldus-mqtt/compile V=s -j"$(nproc)"
             find bin -name "telldus-mqtt*.[ia]pk" -exec cp {} /out/ \;
-            find build_dir -path "*/telldus-mqtt*/ipkg-*/telldus-mqtt/usr/bin/telldus-mqtt" -exec cp {} /out/ \;
             ls -l /out
             ls /out | grep -q "telldus-mqtt.*pk" || { echo "telldus-mqtt package not built"; exit 1; }
           '
