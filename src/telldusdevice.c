@@ -6,6 +6,7 @@
 #include "log.h"
 #include "mqttclient.h"
 #include "telldusdevice.h"
+#include "status.h"
 
 typedef struct DeviceNodeS DeviceNode;
 
@@ -96,6 +97,7 @@ TelldusDevice* TelldusDevice_Create(int device_number)
   Log(TM_LOG_DEBUG, "New device %s", TelldusDevice_ToString(self, str, sizeof(str)));
   
   self->myTimer = MyTimer_Create( myTimerCallback, (void*) self );
+  Status_AddSwitch(device_number);
   
   //MqttClient_AddDevice(MqttClient_GetInstance(), self);
   return self;
@@ -188,20 +190,21 @@ void TelldusDevice_OnEvent(int deviceId, int method, const char *data, int callb
 {
   //TelldusClient* telldusclient = (TelldusClient*) context;
   Log(TM_LOG_DEBUG, "telldusDeviceEvent %i, %i, %s, %i", deviceId, method, data, callbackId);
-  if( !MqttClient_IsConnected(MqttClient_GetInstance()) )
-  {
-    Log(TM_LOG_WARNING, "telldusDeviceEvent, not connected to mqtt => ignore");
-    return;
-  }
-
   TelldusDevice* self = TelldusDevice_Get(deviceId, NULL);
   if( self == NULL )
   {
     Log(TM_LOG_ERROR, "telldusDeviceEvent, self new? => ignore");
     return;
   }
-  
+
   snprintf(self->value, sizeof(self->value), "%s", TelldusDevice_MethodToString(method));
+  Status_SwitchValue(deviceId, self->value);
+
+  if( !MqttClient_IsConnected(MqttClient_GetInstance()) )
+  {
+    Log(TM_LOG_WARNING, "telldusDeviceEvent, not connected to mqtt => ignore");
+    return;
+  }
   MqttClient_DeviceValue(MqttClient_GetInstance(), self);
 }
 

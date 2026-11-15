@@ -10,13 +10,20 @@ struct criticalSection {
 CriticalSection* CriticalSection_Create(void)
 {
   CriticalSection* self = (CriticalSection*) calloc(1, sizeof(CriticalSection));
-  InitializeCriticalSection(&self->cs);
+  if( self != NULL )
+  {
+    InitializeCriticalSection(&self->cs);
+  }
   return self;
 }
 
 void CriticalSection_Destroy(CriticalSection* self)
 {
-  free(self);
+  if( self != NULL )
+  {
+    DeleteCriticalSection(&self->cs);
+    free(self);
+  }
 }
 
 void CriticalSection_Enter(CriticalSection* self)

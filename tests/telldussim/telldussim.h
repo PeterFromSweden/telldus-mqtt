@@ -26,6 +26,8 @@ void TelldusSim_AddDevice(int deviceId);
 void TelldusSim_SensorEvent(const char* protocol, const char* model, int id, int dataType, const char* value);
 // Simulate a received RF device event (e.g. a remote control button).
 void TelldusSim_DeviceEvent(int deviceId, int method);
+// Simulate a received raw RF message, e.g. "class:command;protocol:arctech;...".
+void TelldusSim_RawDeviceEvent(const char* data);
 
 // What telldus-mqtt has asked the simulator to send.
 int TelldusSim_GetTurnOnCount(int deviceId);

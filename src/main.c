@@ -9,6 +9,7 @@
 #include "mqttclient.h"
 #include "log.h"
 #include "config.h"
+#include "status.h"
 #include "asrt.h"
 #include "version.h"
 
@@ -37,6 +38,7 @@ static bool log_time = false;
 static bool log_raw = false;
 static bool sig_exit = false;
 static const char* config_path = NULL;
+static const char* status_path = NULL;
 
 static void atexitFunction(void);
 static void signalHandler(int sig);
@@ -68,6 +70,11 @@ int main(int argc, char *argv[])
       arg++;
       config_path = argv[arg];
     }
+    else if( strcmp(argv[arg], "--status") == 0 && arg + 1 < argc )
+    {
+      arg++;
+      status_path = argv[arg];
+    }
     else if( strcmp(argv[arg], "--version") == 0 )
     {
       printf("telldus-mqtt %s\n", TELLDUS_MQTT_VERSION);
@@ -76,7 +83,7 @@ int main(int argc, char *argv[])
     else
     {
       printf("telldus-mqtt %s\n", TELLDUS_MQTT_VERSION);
-      printf("telldus-mqtt [--nodaemon] [--debug] [--logtime] [--raw] [--config <path>] [--version]\n");
+      printf("telldus-mqtt [--nodaemon] [--debug] [--logtime] [--raw] [--config <path>] [--status <path>] [--version]\n");
       exit(1);
     }
     arg++;
@@ -94,6 +101,17 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
+  if( status_path != NULL )
+  {
+    if( Status_Init(status_path) )
+    {
+      exit(1);
+    }
+    Status_Write(); // The file exists also if telldusd is not reachable
+  }
+  // Early, to write the status file also on exit(1) when connecting
+  atexit(atexitFunction);
+
   telldusclient = TelldusClient_GetInstance();
   TelldusClient_SetLogRaw( telldusclient, log_raw );
   ASRT( TelldusClient_Connect(telldusclient) == 0 );
@@ -101,7 +119,6 @@ int main(int argc, char *argv[])
   mqttclient = MqttClient_GetInstance();
   MqttClient_Connect(mqttclient);
 
-  atexit(atexitFunction);
 # ifndef WIN32
   signal(SIGTERM, signalHandler);
 	signal(SIGINT,  signalHandler);
@@ -133,6 +150,7 @@ int main(int argc, char *argv[])
       sig_exit = true;
     }
 
+    Status_Poll();
     MyThread_Sleep(1000);
   }
 
@@ -179,6 +197,12 @@ static bool windowsSignalHandler(int sig)
 
 static void atexitFunction(void)
 {
+  // Last status, with the connection state at exit
+  if( Status_IsEnabled() )
+  {
+    Status_Write();
+  }
+
   if( mqttclient )
   {
     MqttClient_Destroy( mqttclient );

@@ -16,11 +16,11 @@ add_executable( ${PROJECT_NAME}
   "src/configjson.c" 
   "src/log.c"
   "src/myconsole.c"
-  "src/criticalsection_stub.c"
   "src/stringutils.c" 
   "src/telldusdevice.c"
   "src/telldussensor.c"
   "src/mqttclient.c" 
+  "src/status.c"
 )
 
 if( CMAKE_SYSTEM_NAME STREQUAL "Linux" )
@@ -28,12 +28,16 @@ if( CMAKE_SYSTEM_NAME STREQUAL "Linux" )
     "src/mythread_linux.c"
     "src/mysyslog_linux.c"
     "src/mytimer_linux.c"
+    "src/criticalsection_linux.c"
   )
+  find_package( Threads REQUIRED )
+  target_link_libraries( ${PROJECT_NAME} Threads::Threads )
 elseif( CMAKE_SYSTEM_NAME STREQUAL "Windows" )
   target_sources( ${PROJECT_NAME} PRIVATE 
     "src/mythread_win.c"
     "src/mysyslog_win.c"
     "src/mytimer_win.c"
+    "src/criticalsection_win.c"
   )
 else()
   message( FATAL_ERROR "Only Linux and Windows targets currently supported!" )
@@ -108,6 +112,8 @@ add_test( NAME cli-config-no-file COMMAND ${PROJECT_NAME} --nodaemon --config no
 set_tests_properties( cli-config-no-file PROPERTIES WILL_FAIL TRUE )
 add_test( NAME cli-config-no-file-msg COMMAND ${PROJECT_NAME} --nodaemon --config no-such-dir/telldus-mqtt.json )
 set_tests_properties( cli-config-no-file-msg PROPERTIES PASS_REGULAR_EXPRESSION "no-such-dir/telldus-mqtt.json No such file" )
+add_test( NAME cli-status-missing-arg COMMAND ${PROJECT_NAME} --nodaemon --status )
+set_tests_properties( cli-status-missing-arg PROPERTIES WILL_FAIL TRUE )
 endif()
 
 # ---- INSTALL ----
@@ -133,20 +139,26 @@ if( BUILD_TESTING AND CMAKE_SYSTEM_NAME STREQUAL "Linux" )
     src/mysyslog_linux.c
     src/mythread_linux.c
     src/mytimer_linux.c
-    src/criticalsection_stub.c
+    src/criticalsection_linux.c
+    src/status.c
   )
   find_package( Threads REQUIRED )
 
   add_executable( testtelldussim tests/testtelldussim.c ${TM_SIM_SOURCES} )
-  target_include_directories( testtelldussim PRIVATE src tests ${MOSQUITTO_INCLUDE_DIRS} ${TELLDUS_CORE_INCLUDE_DIRS} ${CJSON_INCLUDE_DIRS} )
+  target_include_directories( testtelldussim PRIVATE src tests ${CMAKE_CURRENT_BINARY_DIR} ${MOSQUITTO_INCLUDE_DIRS} ${TELLDUS_CORE_INCLUDE_DIRS} ${CJSON_INCLUDE_DIRS} )
   target_link_libraries( testtelldussim ${MOSQUITTO_LIBRARIES} ${CJSON_LIBRARIES} Threads::Threads rt )
   add_test( NAME testtelldussim COMMAND testtelldussim )
 
   # End-to-end test through a real broker, skipped if mosquitto is not installed
   find_program( MOSQUITTO_BROKER mosquitto PATHS /usr/sbin /usr/local/sbin )
   add_executable( testbridge tests/testbridge.c ${TM_SIM_SOURCES} )
-  target_include_directories( testbridge PRIVATE src tests ${MOSQUITTO_INCLUDE_DIRS} ${TELLDUS_CORE_INCLUDE_DIRS} ${CJSON_INCLUDE_DIRS} )
+  target_include_directories( testbridge PRIVATE src tests ${CMAKE_CURRENT_BINARY_DIR} ${MOSQUITTO_INCLUDE_DIRS} ${TELLDUS_CORE_INCLUDE_DIRS} ${CJSON_INCLUDE_DIRS} )
   target_link_libraries( testbridge ${MOSQUITTO_LIBRARIES} ${CJSON_LIBRARIES} Threads::Threads rt )
   add_test( NAME testbridge COMMAND testbridge "${MOSQUITTO_BROKER}" )
   set_tests_properties( testbridge PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 60 )
+
+  add_executable( teststatus tests/teststatus.c ${TM_SIM_SOURCES} )
+  target_include_directories( teststatus PRIVATE src tests ${CMAKE_CURRENT_BINARY_DIR} ${MOSQUITTO_INCLUDE_DIRS} ${TELLDUS_CORE_INCLUDE_DIRS} ${CJSON_INCLUDE_DIRS} )
+  target_link_libraries( teststatus ${MOSQUITTO_LIBRARIES} ${CJSON_LIBRARIES} Threads::Threads rt )
+  add_test( NAME teststatus COMMAND teststatus )
 endif()

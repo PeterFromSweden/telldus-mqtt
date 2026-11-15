@@ -10,11 +10,13 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <mosquitto.h>
+#include <cjson/cJSON.h>
 #include <telldus-core.h>
 #include "telldussim/telldussim.h"
 #include "telldusclient.h"
 #include "mqttclient.h"
 #include "config.h"
+#include "status.h"
 #include "mythread.h"
 #include "log.h"
 
@@ -131,6 +133,50 @@ static void dumpMessages(void)
   pthread_mutex_unlock(&msgLock);
 }
 
+// ---- Status file ----
+
+static cJSON* readStatus(const char* path)
+{
+  char text[16384] = "";
+  FILE* f = fopen(path, "rb");
+  if( f == NULL )
+  {
+    return NULL;
+  }
+  fread(text, 1, sizeof(text) - 1, f);
+  fclose(f);
+  return cJSON_Parse(text);
+}
+
+static cJSON* findDevice(cJSON* status, const char* type, const char* id)
+{
+  cJSON* device;
+  cJSON_ArrayForEach(device, cJSON_GetObjectItem(status, "devices"))
+  {
+    const char* t = cJSON_GetStringValue(cJSON_GetObjectItem(device, "type"));
+    const char* i = cJSON_GetStringValue(cJSON_GetObjectItem(device, "id"));
+    if( t != NULL && i != NULL && strcmp(t, type) == 0 && strcmp(i, id) == 0 )
+    {
+      return device;
+    }
+  }
+  return NULL;
+}
+
+static bool hasString(cJSON* object, const char* name, const char* value)
+{
+  const char* s = cJSON_GetStringValue(cJSON_GetObjectItem(object, name));
+  return s != NULL && strcmp(s, value) == 0;
+}
+
+static bool brokerConnected(const char* path)
+{
+  cJSON* status = readStatus(path);
+  bool connected = cJSON_IsTrue(cJSON_GetObjectItem(cJSON_GetObjectItem(status, "broker"), "connected"));
+  cJSON_Delete(status);
+  return connected;
+}
+
 // ---- Broker ----
 
 static pid_t startBroker(const char* path, int port)
@@ -191,6 +237,9 @@ int main(int argc, char* argv[])
   int port = 20000 + (getpid() % 20000);
   char configFile[64];
   snprintf(configFile, sizeof(configFile), "testbridge-%d.json", port);
+  char statusFile[64];
+  snprintf(statusFile, sizeof(statusFile), "testbridge-%d-status.json", port);
+  cJSON* status = NULL;
   struct mosquitto* observer = NULL;
   MqttClient* mqttclient = NULL;
 
@@ -243,6 +292,7 @@ int main(int argc, char* argv[])
   CHECK( waitFor("telldus/" SERIAL "/switch/2/state", "ON") );
 
   CHECK( Config_Load(Config_GetInstance(), configFile) == 0 );
+  CHECK( Status_Init(statusFile) == 0 );
   TelldusClient* telldusclient = TelldusClient_GetInstance();
   CHECK( TelldusClient_Connect(telldusclient) == 0 );
   mqttclient = MqttClient_GetInstance();
@@ -287,6 +337,34 @@ int main(int argc, char* argv[])
   TelldusSim_DeviceEvent(1, TELLSTICK_TURNON);
   CHECK( MqttClient_IsConnected(mqttclient) );
 
+  // Status file: broker state and names from the same config
+  CHECK( Status_Write() == 0 );
+  status = readStatus(statusFile);
+  CHECK( status != NULL );
+  cJSON* brokerStatus = cJSON_GetObjectItem(status, "broker");
+  CHECK( cJSON_IsTrue(cJSON_GetObjectItem(brokerStatus, "connected")) );
+  CHECK( hasString(brokerStatus, "host", "127.0.0.1") );
+  CHECK( cJSON_GetNumberValue(cJSON_GetObjectItem(brokerStatus, "port")) == port );
+  CHECK( cJSON_IsTrue(cJSON_GetObjectItem(cJSON_GetObjectItem(status, "service"), "connected")) );
+  CHECK( cJSON_IsTrue(cJSON_GetObjectItem(cJSON_GetObjectItem(status, "gateway"), "found")) );
+  cJSON* lamp = findDevice(status, "switch", "2");
+  CHECK( hasString(lamp, "name", "Lamp") );
+  CHECK( hasString(lamp, "topic", "Home/Lamp") );
+  CHECK( hasString(cJSON_GetObjectItem(findDevice(status, "switch", "1"), "values"), "state", "ON") );
+  cJSON* shed = findDevice(status, "sensor", "fineoffset_temperaturehumidity_135");
+  CHECK( hasString(shed, "name", "Shed") );
+  CHECK( hasString(shed, "topic", "Home/Shed") );
+  CHECK( hasString(cJSON_GetObjectItem(shed, "values"), "temperature", "21.5") );
+  cJSON* sensor77 = findDevice(status, "sensor", "fineoffset_temperaturehumidity_77");
+  CHECK( sensor77 != NULL );
+  CHECK( cJSON_GetObjectItem(sensor77, "name") == NULL );
+  CHECK( hasString(cJSON_GetObjectItem(sensor77, "values"), "humidity", "55") );
+
+  // Broker disconnect is shown
+  MqttClient_Disconnect(mqttclient);
+  CHECK( Status_Write() == 0 );
+  CHECK( !brokerConnected(statusFile) );
+
 cleanup:
   if( res == 1 )
   {
@@ -305,6 +383,9 @@ cleanup:
   }
   kill(broker, SIGTERM);
   waitpid(broker, NULL, 0);
+  cJSON_Delete(status);
+  Status_Destroy();
+  remove(statusFile);
   remove(configFile);
   printf("%s\n", res == 0 ? "PASSED" : res == SKIP ? "SKIPPED" : "FAILED");
   return res;
