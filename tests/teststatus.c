@@ -307,6 +307,12 @@ static int testOffline(void)
   CHECK( !getBool(findDevice(status, "sensor", "oregon_1A2D_80"), "online") );
   cJSON_Delete(status);
 
+  // Start at a new second, so 1.1 s later is less than 2 s in time() units
+  time_t t = time(NULL);
+  while( time(NULL) == t )
+  {
+    MyThread_Sleep(10);
+  }
   TelldusSim_SensorEvent("oregon", "1A2D", 80, TELLSTICK_TEMPERATURE, "3.2");
   MyThread_Sleep(1100);
   Status_Poll();
