@@ -30,6 +30,7 @@ jobs:
         sdk:
           - mvebu-cortexa9-23.05.2       # Linksys WRT3200ACM
           - mvebu-cortexa9-openwrt-24.10
+          - ath79-generic-22.03.2        # Netgear WNDR3700 v2 (AlbinRouter)
     steps:
       - uses: actions/checkout@v4
         with:
