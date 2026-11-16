@@ -58,7 +58,13 @@ int ConfigJson_LoadContent(ConfigJson* self, char* configFilename )
     FILE* f = fopen(strPath, "rt");
     if( f )
     {
-      Log(TM_LOG_INFO, "Config file %s", strPath);
+      // Log each file one time (the Home Assistant file is read many times)
+      static char lastPath[sizeof(strPath)];
+      if( strcmp(lastPath, strPath) != 0 )
+      {
+        Log(TM_LOG_INFO, "Config file %s", strPath);
+        snprintf(lastPath, sizeof(lastPath), "%s", strPath);
+      }
       return loadFromFile(self, f);
     }
   }
