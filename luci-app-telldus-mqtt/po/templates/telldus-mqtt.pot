@@ -1,26 +1,26 @@
 msgid ""
 msgstr "Content-Type: text/plain; charset=UTF-8"
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:244
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:257
 msgid "\"Manage switches\" is off in Settings. This page names the switches of telldusd, but it does not change tellstick.conf."
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:141
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:153
 msgid "\"Manage switches\" is off in Settings: the switch is saved, but telldusd does not get it."
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:138
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:141
 msgid "%d sensors for other TellSticks are not shown and not changed."
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:246
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:259
 msgid "%d switches for other TellSticks are not shown and not changed."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:52
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:105
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:106
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/status.js:74
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:203
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:216
 msgid "%s ago"
 msgstr ""
 
@@ -28,8 +28,20 @@ msgstr ""
 msgid "A sensor is offline when it sends nothing for this time. 0 = never offline. Default: 600."
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/common.js:188
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/common.js:205
 msgid "A topic must not have + or #."
+msgstr ""
+
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/common.js:264
+msgid "A typed topic stays when you change the name or the prefix."
+msgstr ""
+
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/common.js:261
+msgid "An empty MQTT topic field gives the topic %s/<name>. Change the prefix on the Settings tab."
+msgstr ""
+
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/common.js:262
+msgid "An empty MQTT topic field gives the topic <name>. Change the prefix on the Settings tab."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/settings.js:37
@@ -40,9 +52,9 @@ msgstr ""
 msgid "Broker port"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:61
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:62
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:48
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:144
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:157
 msgid "Cancel"
 msgstr ""
 
@@ -54,7 +66,7 @@ msgstr ""
 msgid "Cannot restart the service. Is telldus-mqtt installed?"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:272
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:284
 msgid "Capture a remote control button"
 msgstr ""
 
@@ -67,9 +79,9 @@ msgstr ""
 msgid "Connected"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:159
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:162
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:211
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:172
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:175
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:224
 msgid "Create switch"
 msgstr ""
 
@@ -77,12 +89,12 @@ msgstr ""
 msgid "Default: 1883."
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/settings.js:61
-msgid "Do not use + or #."
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/common.js:194
+msgid "Do not publish this device any more"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/common.js:234
-msgid "Edit MQTT topics (empty = from the name)"
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/settings.js:61
+msgid "Do not use + or #."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/settings.js:48
@@ -93,7 +105,7 @@ msgstr ""
 msgid "Enable"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:128
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:135
 msgid "For example: Lamp living room"
 msgstr ""
 
@@ -101,12 +113,12 @@ msgstr ""
 msgid "Found"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:115
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:116
 msgid "Give this name to a new sensor, for example after a battery change"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:184
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:202
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:197
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:215
 msgid "Heard"
 msgstr ""
 
@@ -115,7 +127,7 @@ msgid "Host name or IP address of the MQTT broker. Default: 127.0.0.1 (this rout
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:68
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:102
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:104
 msgid "Id"
 msgstr ""
 
@@ -127,8 +139,8 @@ msgstr ""
 msgid "It is not published any more after Save & Apply."
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:87
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:124
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:88
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:127
 msgid "Last heard"
 msgstr ""
 
@@ -140,14 +152,19 @@ msgstr ""
 msgid "MQTT broker"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:84
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:121
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:85
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:124
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:67
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:101
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:103
 msgid "MQTT topic"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:170
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:59
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:155
+msgid "MQTT topic:"
+msgstr ""
+
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:183
 msgid "Make a switch from a button of a remote control: click Start, then press the button on the remote control."
 msgstr ""
 
@@ -160,18 +177,18 @@ msgstr ""
 msgid "Mosquitto"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:83
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:120
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:84
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:123
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:66
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:100
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:102
 msgid "Name"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:142
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:154
 msgid "Name:"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:59
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:60
 msgid "New sensor (newest first):"
 msgstr ""
 
@@ -179,7 +196,7 @@ msgstr ""
 msgid "No new sensor without a name is heard. Put the battery in the new sensor, wait until it shows in the list, then try again."
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:95
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:96
 msgid "No sensors heard yet. Sensors send every few minutes."
 msgstr ""
 
@@ -200,7 +217,7 @@ msgstr ""
 msgid "Not found"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:103
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:104
 msgid "Not heard since the service started"
 msgstr ""
 
@@ -220,7 +237,7 @@ msgstr ""
 msgid "Not known"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/common.js:201
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/common.js:225
 msgid "Not published"
 msgstr ""
 
@@ -228,7 +245,7 @@ msgstr ""
 msgid "Not running"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:109
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:110
 msgid "Not used: another section has this sensor"
 msgstr ""
 
@@ -252,31 +269,35 @@ msgstr ""
 msgid "Password"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:194
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:207
 msgid "Press a button on the remote control now."
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:218
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:231
 msgid "Press a button on the remote control. The radio messages heard after Start show here, newest first."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:69
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:103
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:105
 msgid "Radio code"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:132
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:144
 msgid "Radio code: %s"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:185
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:204
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:198
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:217
 msgid "Radio message"
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:57
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:97
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:99
 msgid "Remove"
+msgstr ""
+
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/common.js:196
+msgid "Remove name"
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:42
@@ -287,8 +308,8 @@ msgstr ""
 msgid "Remove switch %s \"%s\"?"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:73
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:117
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:74
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:118
 msgid "Replace"
 msgstr ""
 
@@ -309,16 +330,16 @@ msgstr ""
 msgid "Running for"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/common.js:221
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/common.js:252
 msgid "Same topic as another device"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:85
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:122
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:86
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:125
 msgid "Sensor id"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:151
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:153
 #: applications/luci-app-telldus-mqtt/root/usr/share/luci/menu.d/luci-app-telldus-mqtt.json:26
 msgid "Sensors"
 msgstr ""
@@ -340,7 +361,7 @@ msgstr ""
 msgid "Shown: the devices of TellStick %s and the devices for all TellSticks."
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:174
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:187
 msgid "Start"
 msgstr ""
 
@@ -349,7 +370,7 @@ msgid "Start the service."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:70
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:104
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:106
 msgid "State"
 msgstr ""
 
@@ -358,24 +379,24 @@ msgstr ""
 msgid "Status"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:223
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:236
 msgid "Stop"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:186
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:205
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:199
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:218
 msgid "Switch"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:206
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:219
 msgid "Switch %s \"%s\" has this code"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:133
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:145
 msgid "Switch id: %s"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:263
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:275
 #: applications/luci-app-telldus-mqtt/root/usr/share/luci/menu.d/luci-app-telldus-mqtt.json:38
 msgid "Switches"
 msgstr ""
@@ -393,7 +414,7 @@ msgstr ""
 msgid "Telldus MQTT settings"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:138
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:150
 msgid "The TellStick sends the same code as the remote control. A receiver that reacts to this button also reacts to the new switch."
 msgstr ""
 
@@ -401,7 +422,7 @@ msgstr ""
 msgid "The TellStick serial is not known yet. Only devices for all TellSticks are shown."
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:153
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:155
 msgid "The sensors that the service heard since it started, and the named sensors. Type a name to publish a sensor to MQTT and Home Assistant. Sensors without a name are not published. Click Save & Apply when you are done."
 msgstr ""
 
@@ -426,14 +447,14 @@ msgid "The service stopped or is starting. The values are from the last time it 
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/settings.js:56
-msgid "The start of the MQTT topics. With the prefix \"home\", a sensor with the name \"Garage\" gets the topic \"home/Garage\". Default: home."
+msgid "The start of the MQTT topics. With the prefix \"home\", a sensor with the name \"Garage\" gets the topic \"home/Garage\". A device with a typed topic keeps its topic. Default: home."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/common.js:104
 msgid "The status file %s is not valid."
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:265
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:277
 msgid "The switches of telldusd. Type a name to publish a switch to MQTT and Home Assistant. Switches without a name are not published. Click Save & Apply when you are done."
 msgstr ""
 
@@ -441,7 +462,7 @@ msgstr ""
 msgid "There is no status file %s. Start the service. The service must write the status file (option --status)."
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:137
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:149
 msgid "This type of remote control is not known to this page. The options are copied from the radio message. They can need a change in /etc/config/telldus-mqtt."
 msgstr ""
 
@@ -454,6 +475,11 @@ msgstr ""
 msgid "Topic prefix"
 msgstr ""
 
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/common.js:234
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/common.js:247
+msgid "Type a name first"
+msgstr ""
+
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:57
 msgid "Use this when a sensor has a new id, for example after a battery change. The new sensor gets the name and topic of \"%s\"."
 msgstr ""
@@ -462,8 +488,8 @@ msgstr ""
 msgid "User name"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:86
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:123
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:87
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:126
 msgid "Values"
 msgstr ""
 
@@ -481,7 +507,7 @@ msgstr ""
 msgid "min"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:106
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:107
 msgid "offline"
 msgstr ""
 

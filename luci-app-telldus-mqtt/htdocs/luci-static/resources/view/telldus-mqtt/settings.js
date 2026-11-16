@@ -53,7 +53,7 @@ return view.extend({
 		o.rmempty = true;
 
 		o = s.option(form.Value, 'topic_prefix', _('Topic prefix'),
-			_('The start of the MQTT topics. With the prefix "home", a sensor with the name "Garage" gets the topic "home/Garage". Default: home.'));
+			_('The start of the MQTT topics. With the prefix "home", a sensor with the name "Garage" gets the topic "home/Garage". A device with a typed topic keeps its topic. Default: home.'));
 		o.placeholder = 'home';
 		o.rmempty = true;
 		o.validate = function(section_id, value) {

@@ -133,8 +133,8 @@ const multi = {
 	]
 };
 result = mig.json2uci(multi);
-same(result.main, { host: '192.168.1.10', port: '1883', user: 'mqtt', pass: 'secret', offline_seconds: '900' },
-	'json2uci: main options');
+same(result.main, { host: '192.168.1.10', port: '1883', user: 'mqtt', pass: 'secret', offline_seconds: '900',
+	topic_prefix: 'Hemma' }, 'json2uci: main options, prefix of the most topics');
 same(result.devices, [
 	{ type: 'sensor', id: 'fineoffset_temperaturehumidity_135', name: 'Uteförråd', topic: 'Hemma/Uteförråd', gateway: 'AE01DHPQ' },
 	{ type: 'sensor', id: 'fineoffset_temperaturehumidity_135', name: 'Landet-kök', topic: 'Landet/Kök', gateway: 'A703AJQJ' },
@@ -159,8 +159,16 @@ same(result.devices, [
 	{ type: 'switch', id: '2', name: 'Arbetsrum', topic: 'home/Arbetsrum' },
 	{ type: 'sensor', id: 'oregon_1A2D_80', name: 'Ute', gateway: 'AE01DHPQ' }
 ], 'json2uci: devices list');
-same(result.main, {}, 'json2uci: no main options');
+same(result.main, { topic_prefix: 'home' }, 'json2uci: only the prefix');
 check(length(result.warnings) == 2, 'json2uci: devices list warnings');
+
+// The prefix: most used, ties -> first in file order, no '/' -> none
+same(mig.topic_prefix([ { topic: 'Hans/Temp' }, { topic: 'Hemma/a' }, { topic: 'Hemma/b' }, { topic: 'Hans/x' },
+	{ topic: 'Hemma/c/d' } ]), 'Hans', 'topic_prefix: tie, first in file order');
+same(mig.topic_prefix([ { topic: 'a/b/c' }, { topic: 'a/b/d' }, { topic: 'a/e' } ]), 'a/b', 'topic_prefix: more levels');
+same(mig.topic_prefix([ { topic: 'Ute' }, { topic: '/Ute' }, { name: 'x' } ]), null, 'topic_prefix: no prefix');
+same(mig.json2uci({ devices: [ { type: 'sensor', id: '1', name: 'Ute', topic: 'Ute' } ] }).main, {},
+	'json2uci: topic without / gives no prefix');
 
 // ---- Scripts as on the router: migration, generator, round trip ----
 
@@ -178,6 +186,8 @@ check(uciText != null, 'migration writes the UCI config');
 let c = cursor(conf);
 check(c.get('telldus-mqtt', 'main', 'host') == '192.168.1.10', 'migrated host');
 check(c.get('telldus-mqtt', 'main', 'offline_seconds') == '900', 'migrated offline_seconds');
+check(c.get('telldus-mqtt', 'main', 'topic_prefix') == 'Hemma', 'migration sets topic_prefix');
+check(index(out.stdout, 'topic_prefix set to "Hemma"') >= 0, 'migration logs the prefix');
 let gateways = [];
 c.foreach('telldus-mqtt', 'device', function(s) { push(gateways, s.gateway); });
 same(gateways, [ 'AE01DHPQ', 'A703AJQJ', 'A6028FQX', 'AE01DHPQ', 'A703AJD8' ], 'migrated gateways');

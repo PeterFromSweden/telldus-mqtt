@@ -90,6 +90,8 @@ return view.extend(Object.assign(common.deviceView('switch'), {
 				state.push(E('br'), E('em', {}, [ _('Not used: another section has this switch') ]));
 
 			var actions = [];
+			if (r.sid && r.name != '')
+				actions.push(this.removeNameButton(r), ' ');
 			if (r.sid)
 				actions.push(E('button', {
 					'class': 'cbi-button cbi-button-remove',
@@ -125,7 +127,17 @@ return view.extend(Object.assign(common.deviceView('switch'), {
 		if (!event)
 			return;
 		var mapped = logic.eventToSwitch(event);
-		var name = E('input', { 'type': 'text', 'class': 'cbi-input-text', 'placeholder': _('For example: Lamp living room') });
+		var prefix = this.prefix();
+		var topic = E('span', {}, [ '-' ]);
+		var name = E('input', {
+			'type': 'text',
+			'class': 'cbi-input-text',
+			'placeholder': _('For example: Lamp living room'),
+			'input': function(ev) {
+				var n = ev.target.value.trim();
+				topic.textContent = (n != '') ? logic.deriveTopic(prefix, n) : '-';
+			}
+		});
 		var id = logic.nextSwitchId(common.sections(), common.devices(this.result));
 
 		var body = [
@@ -140,6 +152,7 @@ return view.extend(Object.assign(common.deviceView('switch'), {
 			body.push(E('div', { 'class': 'alert-message warning' }, [
 				E('p', {}, [ _('"Manage switches" is off in Settings: the switch is saved, but telldusd does not get it.') ]) ]));
 		body.push(E('p', {}, [ _('Name:'), E('br'), name ]));
+		body.push(E('p', {}, [ _('MQTT topic:'), ' ', topic ]));
 		body.push(E('div', { 'class': 'right' }, [
 			E('button', { 'class': 'cbi-button', 'click': ui.hideModal }, [ _('Cancel') ]),
 			' ',
@@ -251,7 +264,6 @@ return view.extend(Object.assign(common.deviceView('switch'), {
 
 	render: function(data) {
 		this.result = data[0];
-		this.showTopics = false;
 		this.capture = null;
 		this.captured = [];
 		this.box = E('div', {});
@@ -265,7 +277,7 @@ return view.extend(Object.assign(common.deviceView('switch'), {
 				_('The switches of telldusd. Type a name to publish a switch to MQTT and Home Assistant. Switches without a name are not published. Click Save & Apply when you are done.')
 			]),
 			E('div', { 'class': 'cbi-section' }, [
-				this.topicToggle(),
+				this.topicHint(),
 				this.box
 			]),
 			E('div', { 'class': 'cbi-section' }, [

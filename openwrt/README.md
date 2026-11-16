@@ -4,7 +4,7 @@ The settings are in the UCI config `/etc/config/telldus-mqtt`. The daemon reads 
 
 ## Files
 - `telldus-mqtt-uci2json.uc`: the generator. It reads the UCI config and writes the daemon config file. Default output: `/var/etc/telldus-mqtt.json`, mode 0600 (it has the broker password).
-- `telldus-mqtt-json2uci.uc`: the migration. It reads an old `/etc/telldus-mqtt/telldus-mqtt.json` and writes the UCI config. If the UCI config has `device` sections already, it does nothing.
+- `telldus-mqtt-json2uci.uc`: the migration. It reads an old `/etc/telldus-mqtt/telldus-mqtt.json` and writes the UCI config. If the UCI config has `device` sections already, it does nothing. It sets `topic_prefix` to the most used prefix of the old topics (the topic without its last part, for example `Hemma` from `Hemma/Uteförråd`; if two are used equally often, the first in the file). The devices keep their topics.
 - `telldus-mqtt-uci2tellstick.uc`: writes the `device` sections of `/etc/tellstick.conf` from the UCI switches. Only if `manage_switches` is `1`. All other content of the file stays (telldusd writes the `controller` sections). It writes the file only if the devices change, with the same file mode. It prints `changed`, `unchanged` or `off`. On an error it does not change the file.
 - `telldus-mqtt-tellstick2uci.uc`: the import, one time. It copies the devices of `/etc/tellstick.conf` to the UCI switches, then sets `manage_switches` to `1`. If `manage_switches` is `1` already, it does nothing.
 - `telldus-mqtt-tellstick.uc`: the tellstick.conf parser and writer for the two scripts. Install it in the same directory.
@@ -74,5 +74,6 @@ config device
 - `type`: `sensor` or `switch`. `id`: the sensor id, or the telldus device number of a switch.
 - `name` is necessary. Only devices with a name are published.
 - `topic` is optional. Default: `<topic_prefix>/<name>`, with `/`, `+` and `#` in the name changed to `_`.
+- To change the prefix: `uci set telldus-mqtt.main.topic_prefix=Hemma; uci commit telldus-mqtt; /etc/init.d/telldus-mqtt reload`. Devices with a `topic` do not change.
 - `gateway` is optional: the TellStick serial. Without it, the device is used with all TellSticks.
 - The generator ignores other options (for example the RF options of a switch, see below).

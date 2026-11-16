@@ -56,6 +56,7 @@ return view.extend(Object.assign(common.deviceView('sensor'), {
 		ui.showModal(_('Replace sensor'), [
 			E('p', {}, [ _('Use this when a sensor has a new id, for example after a battery change. The new sensor gets the name and topic of "%s".').format(oldRow.name) ]),
 			E('p', {}, [ _('Old sensor: %s').format(oldRow.id) ]),
+			E('p', {}, [ _('MQTT topic:'), ' ', oldRow.effectiveTopic ]),
 			E('p', {}, [ _('New sensor (newest first):'), E('br'), select ]),
 			E('div', { 'class': 'right' }, [
 				E('button', { 'class': 'cbi-button', 'click': ui.hideModal }, [ _('Cancel') ]),
@@ -115,6 +116,8 @@ return view.extend(Object.assign(common.deviceView('sensor'), {
 					'title': _('Give this name to a new sensor, for example after a battery change'),
 					'click': ui.createHandlerFn(this, 'handleReplace', r.key)
 				}, [ _('Replace') ]));
+			if (r.sid && r.name != '')
+				actions.push(' ', this.removeNameButton(r));
 
 			table.appendChild(E('tr', { 'class': 'tr' }, [
 				E('td', { 'class': 'td', 'data-title': _('Name') }, [ this.nameInput(r) ]),
@@ -142,7 +145,6 @@ return view.extend(Object.assign(common.deviceView('sensor'), {
 
 	render: function(data) {
 		this.result = data[0];
-		this.showTopics = false;
 		this.box = E('div', {});
 		this.draw();
 		this.startPoll();
@@ -153,7 +155,7 @@ return view.extend(Object.assign(common.deviceView('sensor'), {
 				_('The sensors that the service heard since it started, and the named sensors. Type a name to publish a sensor to MQTT and Home Assistant. Sensors without a name are not published. Click Save & Apply when you are done.')
 			]),
 			E('div', { 'class': 'cbi-section' }, [
-				this.topicToggle(),
+				this.topicHint(),
 				this.box
 			])
 		]);

@@ -2,7 +2,7 @@
 
 LuCI pages for telldus-mqtt, under Services > Telldus MQTT:
 - Status: service, TellStick, telldusd, MQTT broker, last radio message. Restart button.
-- Sensors: the sensors heard, with values and age. Type a name to publish a sensor. Replace: give the name of an old sensor to a new sensor id (after a battery change).
+- Sensors: the sensors heard, with values and age. Type a name to publish a sensor. The MQTT topic field: empty = `<topic prefix>/<name>`, or type a topic. Remove name: the sensor is not published. Replace: give the name of an old sensor to a new sensor id (after a battery change).
 - Switches: name the switches of telldusd. Capture a remote control button and make a switch from it.
 - Settings: broker address, port, user, password, topic prefix, offline time, manage switches.
 
