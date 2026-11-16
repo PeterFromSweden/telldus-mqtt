@@ -24,5 +24,6 @@ void MySysLog_Log(int loglevel, const char *fmt, va_list vlist)
   if( loglevel >= upToLevel )
   {
     vprintf(fmt, vlist);
+    printf("\n");
   }
 }

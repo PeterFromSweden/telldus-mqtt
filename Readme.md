@@ -74,6 +74,9 @@ If the library is not found: `export LD_LIBRARY_PATH=/usr/local/lib`.
 Or run `scripts/setup-linux-deps.sh` to install all of the dependencies above. Run the tests with `cd build && ctest`. The tests use a simulated TellStick, so no hardware is needed.
 
 ### Windows 11
+Get the zip `telldus-mqtt-<version>-win64` from the "Windows zip" workflow on the [Actions](https://github.com/PeterFromSweden/telldus-mqtt/actions) page. Unpack it. Install [TelldusCenter 2.1.2](http://download.telldus.com/TellStick/Software/TelldusCenter/TelldusCenter-2.1.2.exe) (driver, Telldus Service and `TelldusCore.dll`) and use an MQTT broker. Then follow `README.txt` in the zip.
+
+To build from source:
 1. Install [vcpkg](https://vcpkg.io/en/getting-started.html), then `vcpkg install cJson pthreads && vcpkg integrate install`.
 2. Install [Mosquitto](https://mosquitto.org/download/) and [TelldusCenter 2.1.2](http://download.telldus.com/TellStick/Software/TelldusCenter/TelldusCenter-2.1.2.exe).
 3. Build with `-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake`, then `cmake --install build` as administrator.

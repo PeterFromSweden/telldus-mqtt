@@ -1,0 +1,53 @@
+; Import library for TelldusCore.dll (64-bit telldus-core client).
+; TelldusCenter installs TelldusCore.dll. This file only lets the linker
+; make telldus-mqtt.exe without the TelldusCenter development files.
+; The names are from telldus-core/client/libtelldus-core.def in
+; https://github.com/PeterFromSweden/telldus. On x64 the names have no
+; decoration. Make the library with:
+;   lib /def:TelldusCore.def /machine:x64 /out:TelldusCore.lib
+LIBRARY TelldusCore.dll
+EXPORTS
+  tdGetNumberOfDevices
+  tdGetDeviceId
+  tdGetName
+  tdGetProtocol
+  tdGetModel
+  tdGetDeviceParameter
+  tdSetName
+  tdSetProtocol
+  tdSetModel
+  tdSetDeviceParameter
+  tdAddDevice
+  tdRemoveDevice
+  tdMethods
+  tdTurnOn
+  tdTurnOff
+  tdBell
+  tdDim
+  tdGetErrorString
+  tdClose
+  tdInit
+  tdRegisterDeviceEvent
+  tdLastSentCommand
+  tdGetDeviceType
+  tdSendRawCommand
+  tdRegisterRawDeviceEvent
+  tdLearn
+  tdLastSentValue
+  tdReleaseString
+  tdUnregisterCallback
+  tdConnectTellStickController
+  tdDisconnectTellStickController
+  tdRegisterDeviceChangeEvent
+  tdExecute
+  tdUp
+  tdDown
+  tdStop
+  tdRegisterSensorEvent
+  tdSensor
+  tdSensorValue
+  tdController
+  tdControllerValue
+  tdSetControllerValue
+  tdRemoveController
+  tdRegisterControllerEvent
