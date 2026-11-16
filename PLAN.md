@@ -26,7 +26,7 @@ Design:
 - ucode and a JS LuCI view. No Lua.
 
 Location:
-- This repo: daemon, `openwrt/` (generator, migration), `luci-app-telldus-mqtt/` (moves to openwrt/luci when the status format is stable).
+- This repo: daemon, `packaging/openwrt/` (generator, migration), `packaging/openwrt/luci-app-telldus-mqtt/` (moves to openwrt/luci when the status format is stable).
 - openwrt/packages `utils/telldus-mqtt`: Makefile, init script, default UCI config (Peter, later PR).
 
 Steps, one PR each:
@@ -37,8 +37,8 @@ Steps, one PR each:
 5. tellstick.conf from UCI.
 6. LuCI page. Peter tests it on a router.
 
-The openwrt/packages PR needs:
-- Makefile: depends on ucode, ucode-mod-uci, ucode-mod-fs. Install `openwrt/telldus-mqtt-uci2json.uc` and `openwrt/telldus-mqtt-json2uci.uc` (e.g. in `/usr/share/telldus-mqtt/`). Conffile `/etc/config/telldus-mqtt`.
+The openwrt/packages PR needs (draft: `packaging/openwrt/package/`, see its README):
+- Makefile: depends on ucode, ucode-mod-uci, ucode-mod-fs. Install `packaging/openwrt/telldus-mqtt-uci2json.uc` and `packaging/openwrt/telldus-mqtt-json2uci.uc` (e.g. in `/usr/share/telldus-mqtt/`). Conffiles `/etc/config/telldus-mqtt` and the old `/etc/telldus-mqtt/*.json` (opkg deletes a file that the new package does not have). The package installs a short `telldus-mqtt.json` without devices, not the example, so a new install migrates no devices.
 - Default `/etc/config/telldus-mqtt`: `config main 'main'` with enabled 1, host 127.0.0.1, port 1883, user/pass empty, offline_seconds 600, topic_prefix home.
 - uci-defaults script: if telldus-mqtt.json exists, run `ucode .../telldus-mqtt-json2uci.uc /etc/telldus-mqtt/telldus-mqtt.json`. It does nothing if the UCI config has device sections.
 - Init script: run `ucode .../telldus-mqtt-uci2json.uc /var/etc/telldus-mqtt.json` (writes mode 0600, exit code not 0 on error), start with `--config /var/etc/telldus-mqtt.json`, respawn, reload on UCI change. No `-` options after the script name (ucode reads them).
@@ -47,8 +47,8 @@ The openwrt/packages PR needs:
   - Init script: before the daemon starts, run `ucode .../telldus-mqtt-uci2tellstick.uc`. If it prints `changed`, restart telldusd. If the exit code is not 0, log it and start without a change. Also run it on a UCI change (reload).
   - uci-defaults: after json2uci, run `ucode .../telldus-mqtt-tellstick2uci.uc /etc/tellstick.conf /etc/config "$serial"`. `serial` is from the status file of a daemon that ran before: `jsonfilter -i /var/run/telldus-mqtt.json -e '@.gateway.serial'`.
   - Device names in tellstick.conf do not change (host scripts read `tdtool -l`). Only a new device gets the UCI name. After the import, uci2tellstick prints `unchanged` for the owner's file.
-  - Limits: on a first install, there is no status file, so there is no serial. Then the import works only if each switch id has one section, or one section without `gateway`. Else it stops with an error and changes nothing; the user runs it again with the serial. The controller sections of tellstick.conf do not tell which TellStick is on this router. telldusd reads tellstick.conf only at start, and writes all of it from memory (for example for a new controller). Thus restart telldusd at once after `changed`: a telldusd with the old devices can write them back. Then the next run prints `changed` again and the restart corrects it. Not tested on a router.
-- Step 6, LuCI: the init script starts the daemon with `--status /var/run/telldus-mqtt.json` and has a reload trigger on the UCI config `telldus-mqtt`. `luci-app-telldus-mqtt` needs `rpcd-mod-ucode`.
+  - Limits: on a first install, there is no status file, so there is no serial. Then the import works only if each switch id has one section, or one section without `gateway`. Else it stops with an error and changes nothing. Then the uci-defaults script makes `/etc/telldus-mqtt/tellstick-import-pending`. At each start, the init script runs the import again with the serial of the status file, if the file and the serial exist. When the import succeeds, it deletes the file. The status file is in `/var/run`: the import runs at the first restart or reload after the daemon found the TellStick, not at boot. The controller sections of tellstick.conf do not tell which TellStick is on this router. telldusd reads tellstick.conf only at start, and writes all of it from memory (for example for a new controller). Thus restart telldusd at once after `changed`: a telldusd with the old devices can write them back. Then the next run prints `changed` again and the restart corrects it. Not tested on a router.
+- Step 6, LuCI: the init script starts the daemon with `--status /var/run/telldus-mqtt.json` and has a reload trigger on the UCI config `telldus-mqtt`. Reload runs the scripts again. procd restarts the daemon if `/var/etc/telldus-mqtt.json` changed (`procd_set_param file`). `luci-app-telldus-mqtt` needs `rpcd-mod-ucode`.
 - Remove `telldus-mqtt-watchdog.sh` when the status file has the time since the last RF message (the script has the topic "Hemma" hard-coded).
 
 ## Next

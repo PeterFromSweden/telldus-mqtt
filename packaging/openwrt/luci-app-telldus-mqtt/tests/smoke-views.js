@@ -242,15 +242,26 @@ async function main() {
 		assert.deepStrictEqual(names, [ 'Källare', 'Uteförråd', '', '' ]);
 		assert.ok(node.textContent.includes('1 sensors for other TellSticks'), node.textContent);
 
-		// Name the oregon sensor
+		// Hint with the prefix; a topic field on each row
+		assert.ok(node.textContent.includes('gives the topic home/<name>. Change the prefix on the Settings tab.'), node.textContent);
+		assert.ok(!node.querySelector('input[type=checkbox]'));
+		assert.strictEqual(node.querySelectorAll('input[data-topic]').length, 4);
+		assert.strictEqual(rows[1].querySelector('input[data-topic]').value, 'Hemma/Uteförråd');
+
+		// Name the oregon sensor: the topic field shows the topic at once
 		const oregonRow = rows.find(r => r.textContent.includes('oregon_1A2D_80'));
 		const inp = oregonRow.querySelector('input');
-		inp.focus(); inp.value = 'Garage'; fire(inp, 'change'); inp.blur();
+		const oti = oregonRow.querySelector('input[data-topic]');
+		assert.ok(oti.disabled);
+		inp.focus(); inp.value = 'Garage'; fire(inp, 'input');
+		assert.ok(!oti.disabled);
+		assert.strictEqual(oti.getAttribute('placeholder'), 'home/Garage');
+		fire(inp, 'change'); inp.blur();
 		await tick();
 		const added = uci.data.find(s => s.id == 'oregon_1A2D_80');
 		assert.deepStrictEqual(Object.assign({}, added, { '.name': undefined }), { '.name': undefined, '.type': 'device', type: 'sensor', id: 'oregon_1A2D_80', name: 'Garage', gateway: SERIAL });
 		// Redrawn: topic shown
-		assert.ok(node.textContent.includes('home/Garage'), node.textContent);
+		assert.ok(node.querySelector('input[data-topic][placeholder="home/Garage"]:not([disabled])'), node.innerHTML);
 
 		// Rename again in the new table: no second section
 		let inp2 = Array.from(node.querySelectorAll('input[type=text]')).find(i => i.value == 'Garage');
@@ -260,8 +271,6 @@ async function main() {
 		assert.strictEqual(uci.data.find(s => s.id == 'oregon_1A2D_80').name, 'Garage 2');
 
 		// Topic edit
-		const toggle = node.querySelector('input[type=checkbox]');
-		toggle.checked = true; fire(toggle, 'change');
 		const topicInputs = Array.from(node.querySelectorAll('input[type=text]')).filter(i => i.getAttribute('placeholder') && i.getAttribute('placeholder').startsWith('home/'));
 		assert.ok(topicInputs.length >= 2);
 		const ti = topicInputs.find(i => i.getAttribute('placeholder') == 'home/Garage 2');
@@ -275,13 +284,19 @@ async function main() {
 		inp2.value = ''; fire(inp2, 'change'); await tick();
 		assert.strictEqual(uci.data.filter(s => s.id == 'oregon_1A2D_80').length, 0);
 
+		// Remove name: Uteförråd (cfg02) is not published, its section is removed
+		const uRow = Array.from(node.querySelectorAll('tr.tr')).find(r => r.textContent.includes('fineoffset_temperaturehumidity_135'));
+		Array.from(uRow.querySelectorAll('button')).find(b => b.textContent == 'Remove name').click(); await tick();
+		assert.ok(!uci.find('cfg02'));
+
 		// Replace: Källare (cfg03) gets the oregon id
 		const kRow = Array.from(node.querySelectorAll('tr.tr')).find(r => r.textContent.includes('oregon_9_9'));
 		const rb = kRow.querySelector('button');
 		rb.click(); await tick();
 		assert.ok(ui.modal, 'replace dialog');
 		const sel = ui.modal.querySelector('select');
-		assert.ok(sel.options.length == 2, ui.modal.textContent);
+		assert.ok(sel.options.length == 3, ui.modal.textContent);
+		assert.ok(ui.modal.textContent.includes('MQTT topic: home/Källare'), ui.modal.textContent);
 		sel.value = 'sensor oregon_1A2D_80';
 		Array.from(ui.modal.querySelectorAll('button')).find(b => b.textContent == 'Replace').click();
 		await tick();
@@ -337,14 +352,16 @@ async function main() {
 		create.click(); await tick();
 		assert.ok(ui.modal, 'empty name: dialog stays');
 		ui.modal.querySelector('input').value = 'Lampa';
+		fire(ui.modal.querySelector('input'), 'input');
+		assert.ok(ui.modal.textContent.includes('MQTT topic: home/Lampa'), ui.modal.textContent);
 		create.click(); await tick();
 		const sw = uci.data.find(s => s.name == 'Lampa');
 		assert.deepStrictEqual(Object.assign({}, sw, { '.name': 0 }), { '.name': 0, '.type': 'device', type: 'switch', id: '12', name: 'Lampa', protocol: 'sartano', model: 'codeswitch', code: '0101010101', gateway: SERIAL });
 		assert.ok(node.textContent.includes('Not in telldusd yet'), node.textContent);
 
-		// Clear name of switch 2: section kept, name removed
-		const a = Array.from(node.querySelectorAll('input[type=text]')).find(i => i.value == 'Arbetsrum');
-		a.value = ''; fire(a, 'change'); await tick();
+		// Remove name of switch 2: section kept (RF options), name removed
+		const arow = Array.from(node.querySelectorAll('tr.tr')).find(r => { const i = r.querySelector('input'); return i && i.value == 'Arbetsrum'; });
+		Array.from(arow.querySelectorAll('button')).find(b => b.textContent == 'Remove name').click(); await tick();
 		assert.ok(uci.find('cfg04'));
 		assert.strictEqual(uci.find('cfg04').name, undefined);
 

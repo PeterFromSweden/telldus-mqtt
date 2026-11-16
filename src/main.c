@@ -46,6 +46,9 @@ static bool windowsSignalHandler(int sig);
 
 int main(int argc, char *argv[])
 {
+  // No buffer: the log is visible at once, also in a pipe or a file
+  setvbuf(stdout, NULL, _IONBF, 0);
+
   int arg = 1;
   while( arg < argc )
   {

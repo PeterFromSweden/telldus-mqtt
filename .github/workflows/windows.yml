@@ -1,0 +1,102 @@
+name: Windows zip
+
+# Builds telldus-mqtt.exe for Windows x64 and uploads a zip with the exe,
+# the DLLs it needs, the config files and README.txt.
+# TelldusCore.dll is not in the zip: the user installs TelldusCenter, which
+# has the DLL and the Telldus Service.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  win64:
+    name: Windows x64 zip
+    runs-on: windows-latest
+    env:
+      VCPKG_TRIPLET: x64-windows-release
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\vcpkg-cache
+      # telldus-core.h from https://github.com/PeterFromSweden/telldus
+      TELLDUS_REV: 366680936a59b4f2a2f7408d7285894eeca991b4
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      # cl, lib, dumpbin and VCToolsRedistDir
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Restore vcpkg binary cache
+        id: vcpkg-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: vcpkg-cache
+          key: vcpkg-${{ env.VCPKG_TRIPLET }}-${{ hashFiles('.github/workflows/windows.yml') }}
+          restore-keys: vcpkg-${{ env.VCPKG_TRIPLET }}-
+
+      - name: Install cJSON and mosquitto with vcpkg
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:VCPKG_DEFAULT_BINARY_CACHE | Out-Null
+          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install cjson mosquitto --triplet $env:VCPKG_TRIPLET
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+      - name: Save vcpkg binary cache
+        if: steps.vcpkg-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: vcpkg-cache
+          key: vcpkg-${{ env.VCPKG_TRIPLET }}-${{ hashFiles('.github/workflows/windows.yml') }}
+
+      # No TelldusCenter in CI: take the public header from the telldus
+      # source and make the import library for TelldusCore.dll from a .def file.
+      - name: telldus-core header and import library
+        run: |
+          New-Item -ItemType Directory -Force -Path telldus-sdk\include, telldus-sdk\lib | Out-Null
+          Invoke-WebRequest "https://raw.githubusercontent.com/PeterFromSweden/telldus/$env:TELLDUS_REV/telldus-core/client/telldus-core.h" -OutFile telldus-sdk\include\telldus-core.h
+          lib /nologo /def:packaging\windows\TelldusCore.def /machine:x64 /out:telldus-sdk\lib\TelldusCore.lib
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+      - name: Configure
+        run: |
+          $vi = ($env:VCPKG_INSTALLATION_ROOT -replace '\\', '/') + "/installed/$env:VCPKG_TRIPLET"
+          $td = ($PWD.Path -replace '\\', '/') + '/telldus-sdk'
+          cmake -B build -A x64 `
+            "-DTELLDUS_CORE_INCLUDE_DIR=$td/include" `
+            "-DTELLDUS_CORE_LIBRARY=$td/lib/TelldusCore.lib" `
+            "-DMOSQUITTO_INCLUDE_DIR=$vi/include" `
+            "-DMOSQUITTO_LIBRARY=$vi/lib/mosquitto.lib" `
+            "-DCJSON_INCLUDE_DIR=$vi/include" `
+            "-DCJSON_LIBRARY=$vi/lib/cjson.lib"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+      - name: Build
+        run: |
+          cmake --build build --config Release --parallel
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+      - name: Make the zip folder
+        id: package
+        run: |
+          $version = (Select-String -Path build\CMakeCache.txt -Pattern '^CMAKE_PROJECT_VERSION:STATIC=(.+)$').Matches[0].Groups[1].Value
+          "version=$version" >> $env:GITHUB_OUTPUT
+          & packaging\windows\package.ps1 -BuildDir build -Config Release `
+            -VcpkgInstalled "$env:VCPKG_INSTALLATION_ROOT\installed\$env:VCPKG_TRIPLET" -OutDir dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: telldus-mqtt-${{ steps.package.outputs.version }}-win64
+          path: dist/
+          if-no-files-found: error
+
+      # The cli-* tests start telldus-mqtt.exe, which needs TelldusCore.dll.
+      # It is not on the runner, so only the unit tests run.
+      - name: Test
+        run: |
+          $env:PATH = "$env:VCPKG_INSTALLATION_ROOT\installed\$env:VCPKG_TRIPLET\bin;$env:PATH"
+          ctest --test-dir build -C Release --output-on-failure -E "^cli-"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }

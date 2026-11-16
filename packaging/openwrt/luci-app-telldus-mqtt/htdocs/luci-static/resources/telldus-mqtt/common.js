@@ -179,6 +179,23 @@ function deviceView(type) {
 			this.redrawSoon();
 		},
 
+		// As an empty name field: the device is not published any more
+		handleRemoveName: function(key, ev) {
+			var row = this.findRow(key);
+			if (!row || !row.sid)
+				return;
+			applyOps(logic.planName(row, '', uci.get(CONFIG, row.sid), sections(), serial(this.result)));
+			this.draw();
+		},
+
+		removeNameButton: function(row) {
+			return E('button', {
+				'class': 'cbi-button cbi-button-remove',
+				'title': _('Do not publish this device any more'),
+				'click': ui.createHandlerFn(this, 'handleRemoveName', row.key)
+			}, [ _('Remove name') ]);
+		},
+
 		handleTopic: function(key, ev) {
 			var row = this.findRow(key);
 			if (!row)
@@ -193,46 +210,59 @@ function deviceView(type) {
 			this.redrawSoon();
 		},
 
+		prefix: function() {
+			return logic.topicPrefix(main());
+		},
+
+		// While the user types a name, the empty topic field shows the topic
+		// that the name gives. The section is made when the name field loses
+		// the focus ('change'), before the topic field gets it.
 		nameInput: function(row) {
 			return E('input', {
 				'type': 'text',
 				'class': 'cbi-input-text',
 				'value': row.name,
 				'placeholder': _('Not published'),
-				'change': L.bind(this.handleName, this, row.key)
+				'change': L.bind(this.handleName, this, row.key),
+				'input': L.bind(function(ev) {
+					var tr = ev.target.closest('tr');
+					var t = tr ? tr.querySelector('input[data-topic]') : null;
+					var name = ev.target.value.trim();
+					if (!t)
+						return;
+					t.disabled = (name == '');
+					t.placeholder = (name != '') ? logic.deriveTopic(this.prefix(), name) : _('Type a name first');
+				}, this)
 			});
 		},
 
-		// An input if the user wants to edit topics, else the topic as text
+		// The topic field. Empty: the topic is from the name (placeholder).
 		topicCell: function(row, dups) {
-			var cell;
-			if (this.showTopics)
-				cell = [ E('input', {
-					'type': 'text',
-					'class': 'cbi-input-text',
-					'value': row.topic,
-					'placeholder': row.derivedTopic,
-					'disabled': (row.name == '' || !row.sid) ? '' : null,
-					'change': L.bind(this.handleTopic, this, row.key)
-				}) ];
-			else
-				cell = [ E('span', {}, [ row.effectiveTopic || '-' ]) ];
+			var named = (row.name != '' && row.sid);
+			var cell = [ E('input', {
+				'type': 'text',
+				'class': 'cbi-input-text',
+				'data-topic': '1',
+				'value': row.topic,
+				'placeholder': named ? row.derivedTopic : _('Type a name first'),
+				'disabled': named ? null : '',
+				'change': L.bind(this.handleTopic, this, row.key)
+			}) ];
 			if (row.effectiveTopic != '' && dups[row.effectiveTopic])
 				cell.push(E('br'), E('em', {}, [ _('Same topic as another device') ]));
 			return cell;
 		},
 
-		topicToggle: function() {
-			return E('p', {}, [ E('label', {}, [
-				E('input', {
-					'type': 'checkbox',
-					'change': L.bind(function(ev) {
-						this.showTopics = ev.target.checked;
-						this.draw();
-					}, this)
-				}),
-				' ', _('Edit MQTT topics (empty = from the name)')
-			]) ]);
+		// The prefix of new topics, and where to change it
+		topicHint: function() {
+			var p = this.prefix();
+			return E('p', { 'class': 'cbi-section-descr' }, [
+				(p != '')
+					? _('An empty MQTT topic field gives the topic %s/<name>. Change the prefix on the Settings tab.').format(p)
+					: _('An empty MQTT topic field gives the topic <name>. Change the prefix on the Settings tab.'),
+				' ',
+				_('A typed topic stays when you change the name or the prefix.')
+			]);
 		},
 
 		startPoll: function(seconds) {

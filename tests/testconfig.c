@@ -28,9 +28,18 @@ static bool strEq(const char* a, const char* b)
   return a != NULL && b != NULL && strcmp(a, b) == 0;
 }
 
+static int loadJson(const char* content);
+
+static const char* translationJson =
+  "{ \"topic-translation\": [\n"
+  "    { \"telldus\": \"telldus/A703AKOX/sensor/fineoffset_temperaturehumidity_135\", \"mqtt\": \"Hemma/Uteförråd\", \"name\": \"Uteförråd\" },\n"
+  "    { \"telldus\": \"telldus/A703AKOX/sensor/fineoffset_temperaturehumidity_183\", \"mqtt\": \"Hemma/Tvätt\", \"name\": \"Tvättstuga\" }\n"
+  "  ] }\n";
+
 static int testTranslation(void)
 {
   int res = 0;
+  CHECK( loadJson(translationJson) == 0 );
   char iostr[100] = "telldus/A703AKOX/sensor/fineoffset_temperaturehumidity_183/Temperature";
   const char* name;
   CHECK( Config_TranslateTopics(config, "A703AKOX", "sensor", "fineoffset_temperaturehumidity_183",
@@ -199,12 +208,27 @@ static int testLoadFileInvalid(void)
   return res;
 }
 
+static int testDefaultConfig(void)
+{
+  int res = 0;
+  const char* name;
+  char text[100] = "telldus/A703AKOX/sensor/fineoffset_temperaturehumidity_183/Temperature";
+  CHECK( !Config_FilterUnnamed(config) );
+  CHECK( !Config_TranslateTopics(config, "A703AKOX", "sensor", "fineoffset_temperaturehumidity_183",
+    text, sizeof(text), &name) );
+  CHECK( strEq(text, "telldus/A703AKOX/sensor/fineoffset_temperaturehumidity_183/Temperature") );
+  CHECK( Config_FindTopic(config, "A703AKOX", "sensor", "fineoffset_temperaturehumidity_183", &name) == NULL );
+  return res;
+}
+
 int main(void)
 {
   Log_Init(TM_LOG_CONSOLE, "testconfig", TM_LOG_DEBUG, false);
   config = Config_GetInstance();
   int res = 0;
+  // The default config: loads, publishes all, names nothing
   CHECK( Config_Load(config, "telldus-mqtt.json") == 0 );
+  res |= testDefaultConfig();
   res |= testTranslation();
   res |= testLoadFileMissing();
   res |= testLoadFileInvalid();

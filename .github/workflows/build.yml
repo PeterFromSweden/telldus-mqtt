@@ -19,7 +19,7 @@ jobs:
       - name: Test
         run: cd build && ctest --output-on-failure
       - name: Test LuCI logic
-        run: node luci-app-telldus-mqtt/tests/check-syntax.js && node luci-app-telldus-mqtt/tests/test-logic.js
+        run: node packaging/openwrt/luci-app-telldus-mqtt/tests/check-syntax.js && node packaging/openwrt/luci-app-telldus-mqtt/tests/test-logic.js
 
   openwrt:
     name: OpenWrt ${{ matrix.sdk }}
@@ -35,8 +35,9 @@ jobs:
         with:
           path: src
 
-      # Uses the package Makefile from openwrt/packages master,
-      # with the source replaced by this checkout.
+      # Builds packaging/openwrt/package (the draft for openwrt/packages) with the
+      # source replaced by this checkout, and luci-app-telldus-mqtt in the
+      # luci feed tree (it includes ../../luci.mk).
       - name: Build in OpenWrt SDK
         run: |
           mkdir -p out
@@ -50,11 +51,16 @@ jobs:
                 -e "s,https://git.openwrt.org/project/,https://github.com/openwrt/," \
                 feeds.conf.default > feeds.conf
             ./scripts/feeds update -a
+            # luci.mk takes the version from git: commit the app in the feed
+            cp -r /src/packaging/openwrt/luci-app-telldus-mqtt feeds/luci/applications/
+            git -C feeds/luci add applications/luci-app-telldus-mqtt
+            git -C feeds/luci -c user.name=ci -c user.email=ci@localhost \
+                commit -q -m "luci-app-telldus-mqtt from CI"
+            ./scripts/feeds update -i luci
             ./scripts/feeds install -a
+            # Replace the telldus-mqtt package of the packages feed
             rm -f package/feeds/packages/telldus-mqtt
-            git clone --depth 1 --filter=blob:none --sparse https://github.com/openwrt/packages /tmp/packages
-            git -C /tmp/packages sparse-checkout set utils/telldus-mqtt
-            cp -r /tmp/packages/utils/telldus-mqtt package/telldus-mqtt
+            cp -r /src/packaging/openwrt/package package/telldus-mqtt
             mk=package/telldus-mqtt/Makefile
             sed -i -e "/^PKG_SOURCE_PROTO/d" -e "/^PKG_SOURCE_URL/d" \
                    -e "/^PKG_SOURCE_VERSION/d" -e "/^PKG_MIRROR_HASH/d" "$mk"
@@ -62,9 +68,11 @@ jobs:
             cat "$mk"
             make defconfig
             make package/telldus-mqtt/compile V=s -j"$(nproc)"
-            find bin -name "telldus-mqtt*.[ia]pk" -exec cp {} /out/ \;
+            make package/luci-app-telldus-mqtt/compile V=s -j"$(nproc)"
+            find bin \( -name "telldus-mqtt*.[ia]pk" -o -name "luci-app-telldus-mqtt*.[ia]pk" \) -exec cp {} /out/ \;
             ls -l /out
-            ls /out | grep -q "telldus-mqtt.*pk" || { echo "telldus-mqtt package not built"; exit 1; }
+            ls /out | grep -q "^telldus-mqtt.*pk" || { echo "telldus-mqtt package not built"; exit 1; }
+            ls /out | grep -q "^luci-app-telldus-mqtt.*pk" || { echo "luci-app-telldus-mqtt package not built"; exit 1; }
           '
 
       - uses: actions/upload-artifact@v4

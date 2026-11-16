@@ -4,6 +4,8 @@
 // The UCI config dir is for tests. Default: /etc/config.
 // Default input: /etc/telldus-mqtt/telldus-mqtt.json.
 // If the UCI config has device sections already, nothing is changed.
+// It sets main.topic_prefix to the most used prefix of the old topics,
+// so that a new name gets a topic next to the old ones.
 
 'use strict';
 
@@ -31,8 +33,35 @@ function last_part(topic) {
 	return parts[length(parts) - 1];
 }
 
+// The prefix for new names: the most used topic without its last part
+// ("Hemma/Uteförråd" -> "Hemma"). If two prefixes are used equally often,
+// the first in file order. null if no topic has a '/'.
+function topic_prefix(devices) {
+	let count = {};
+	let order = [];
+	for (let i = 0; i < length(devices); i++) {
+		let topic = devices[i].topic;
+		let end = topic ? rindex(topic, '/') : -1;
+		if (end <= 0)
+			continue;
+		let prefix = substr(topic, 0, end);
+		if (!count[prefix]) {
+			count[prefix] = 0;
+			push(order, prefix);
+		}
+		count[prefix]++;
+	}
+	let best = null;
+	for (let i = 0; i < length(order); i++)
+		if (best == null || count[order[i]] > count[best])
+			best = order[i];
+	return best;
+}
+
 // Pure function: daemon JSON object -> { main: { option: value },
-// devices: [ { option: value } ], warnings: [ ... ] }
+// devices: [ { option: value } ], warnings: [ ... ] }.
+// main.topic_prefix is set from the topics of the devices. The devices
+// keep their topics: a later change of the prefix does not move them.
 function json2uci(cfg) {
 	let main = {};
 	let devices = [];
@@ -100,6 +129,10 @@ function json2uci(cfg) {
 			gateway: m[1]
 		}, what);
 	}
+
+	let prefix = topic_prefix(devices);
+	if (prefix != null)
+		main.topic_prefix = prefix;
 
 	return { main: main, devices: devices, warnings: warnings };
 }
@@ -181,6 +214,9 @@ function main(args) {
 		return 1;
 	}
 	print(sprintf('telldus-mqtt-json2uci: %d devices written to UCI config %s\n', length(result.devices), CONFIG));
+	if (result.main.topic_prefix != null)
+		print(sprintf('telldus-mqtt-json2uci: topic_prefix set to "%s" (the most used prefix of the old topics)\n',
+			result.main.topic_prefix));
 	return 0;
 }
 
@@ -189,4 +225,4 @@ function main(args) {
 if (!global.TELLDUS_MQTT_UC_TEST)
 	exit(main(ARGV));
 
-return { json2uci: json2uci };
+return { json2uci: json2uci, topic_prefix: topic_prefix };
