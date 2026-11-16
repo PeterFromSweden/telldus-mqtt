@@ -113,9 +113,12 @@ const poll = { add(fn, s) { polls.push(fn); } };
 
 let rpcReply = null;
 let initActions = [];
+let switchCalls = [];
+let switchReply = { ok: true };
 const rpc = {
 	declare(d) {
 		return function() {
+			if (d.object == 'luci.telldus-mqtt' && d.method == 'setSwitch') { switchCalls.push(Array.from(arguments)); return Promise.resolve(switchReply); }
 			if (d.object == 'luci.telldus-mqtt') return Promise.resolve(JSON.parse(JSON.stringify(rpcReply)));
 			if (d.object == 'luci' && d.method == 'setInitAction') { initActions.push(Array.from(arguments)); return Promise.resolve(true); }
 			return Promise.reject(new Error('no rpc'));
@@ -330,6 +333,20 @@ async function main() {
 		const node = await v.render(await v.load());
 		main.appendChild(node);
 		assert.ok(node.textContent.includes('arctech selflearning-switch, house 30341302, unit 2'), node.textContent);
+		// On and Off buttons: only for switches of the status file (also without a name)
+		const swRows = Array.from(node.querySelectorAll('tr.tr')).filter(r => r.querySelector('button') && Array.from(r.querySelectorAll('button')).some(b => b.textContent == 'On'));
+		assert.strictEqual(swRows.length, 2, node.textContent);
+		const btn = (r, t) => Array.from(r.querySelectorAll('button')).find(b => b.textContent == t);
+		const notes = ui.notes.length;
+		const row11 = swRows.find(r => r.querySelector('input').value == '');
+		btn(row11, 'On').click(); await tick();
+		btn(row11, 'Off').click(); await tick();
+		assert.deepStrictEqual(switchCalls, [ [ 11, true ], [ 11, false ] ]);
+		assert.strictEqual(ui.notes.length, notes);
+		switchReply = { ok: false, error: 'TellStick not found' };
+		btn(row11, 'On').click(); await tick();
+		assert.deepStrictEqual(ui.notes.pop(), [ 'Cannot switch 11: TellStick not found', 'danger' ]);
+		switchReply = { ok: true };
 		// Start capture
 		const start = Array.from(node.querySelectorAll('button')).find(b => b.textContent == 'Start');
 		start.click(); await tick();

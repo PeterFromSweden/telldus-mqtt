@@ -28,6 +28,26 @@ var callInitAction = rpc.declare({
 	expect: { result: false }
 });
 
+var callSetSwitch = rpc.declare({
+	object: 'luci.telldus-mqtt',
+	method: 'setSwitch',
+	params: [ 'id', 'on' ],
+	expect: { '': {} }
+});
+
+// Switch a device on or off now (tdtool). The page shows the new state
+// when telldus-mqtt has it in the status file. Notification on failure.
+function setSwitch(id, on) {
+	return callSetSwitch(id, !!on).then(function(r) {
+		return (r && r.ok) ? null : ((r && r.error) || _('Unknown error'));
+	}, function(err) {
+		return String((err && err.message) || err);
+	}).then(function(error) {
+		if (error != null)
+			ui.addNotification(null, E('p', {}, [ _('Cannot switch %d: %s').format(id, error) ]), 'danger');
+	});
+}
+
 // The result of getStatus. If the call fails: { error: true, ... }.
 function getStatus() {
 	return L.resolveDefault(callGetStatus(), null).then(function(r) {
@@ -309,6 +329,7 @@ return baseclass.extend({
 	devices: devices,
 	events: events,
 	restart: restart,
+	setSwitch: setSwitch,
 	applyOps: applyOps,
 	sections: sections,
 	main: main,

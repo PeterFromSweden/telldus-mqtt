@@ -9,7 +9,8 @@
 		},
 		"write": {
 			"ubus": {
-				"luci": [ "setInitAction" ]
+				"luci": [ "setInitAction" ],
+				"luci.telldus-mqtt": [ "setSwitch" ]
 			},
 			"uci": [ "telldus-mqtt" ]
 		}
