@@ -41,8 +41,10 @@ void ConfigJson_Destroy(ConfigJson* self)
 
 int ConfigJson_LoadContent(ConfigJson* self, char* configFilename )
 {
-  // Linux execute, Windows IDE execute, Windows installed execute, Linux installed
-  const char* const prefixes[] = { "", "../", "../etc/telldus-mqtt/", "/etc/telldus-mqtt/" };
+  // Linux execute, Windows IDE execute, Windows installed execute,
+  // Linux installed with cmake (/usr/local), Linux package
+  const char* const prefixes[] = { "", "../", "../etc/telldus-mqtt/",
+    "/usr/local/etc/telldus-mqtt/", "/etc/telldus-mqtt/" };
   char strPath[256];
 
   for( size_t i = 0; i < sizeof(prefixes) / sizeof(prefixes[0]); i++ )
@@ -56,7 +58,7 @@ int ConfigJson_LoadContent(ConfigJson* self, char* configFilename )
     FILE* f = fopen(strPath, "rt");
     if( f )
     {
-      Log(TM_LOG_DEBUG, "Load %s", strPath);
+      Log(TM_LOG_INFO, "Config file %s", strPath);
       return loadFromFile(self, f);
     }
   }

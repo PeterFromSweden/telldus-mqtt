@@ -61,7 +61,7 @@ The service starts right away. Logs: `logread | grep telldus-mqtt`.
 
 ### Linux (Ubuntu 22.04+)
 ```bash
-sudo apt install mosquitto libmosquitto-dev pkg-config libconfuse-dev libftdi-dev libcjson-dev
+sudo apt install build-essential cmake pkg-config libmosquitto-dev libconfuse-dev libftdi-dev libcjson-dev
 
 git clone https://github.com/PeterFromSweden/telldus.git
 cmake -S telldus/telldus-core -B telldus/build
@@ -69,9 +69,22 @@ cmake --build telldus/build && sudo cmake --install telldus/build   # installs t
 
 cmake -B build && cmake --build build && sudo cmake --install build
 ```
-If the library is not found: `export LD_LIBRARY_PATH=/usr/local/lib`.
+- A broker is necessary. If you have none: `sudo apt install mosquitto`.
+- The telldus-core install writes a new `/etc/tellstick.conf`. Save your old file first.
+- `telldusd` must be able to write its files. It runs as user `nobody`, group `plugdev`:
+  ```bash
+  sudo chgrp plugdev /etc/tellstick.conf && sudo chmod 664 /etc/tellstick.conf
+  sudo mkdir -p /tmp/state && sudo chown -R nobody:plugdev /tmp/state
+  ```
+  Without this, the log says `Unable to open config file with write access` and the TellStick is not found.
+- Start `telldusd`: `sudo telldusd`. Check with `tdtool --list-sensors`.
+- The config file is `/usr/local/etc/telldus-mqtt/telldus-mqtt.json`. Set the broker there.
+- Start: `telldus-mqtt --nodaemon`. The log shows which config file is used.
+- To find the sensor ids: `telldus-mqtt --nodaemon --status /tmp/telldus-mqtt.json`, then read that file.
+- To start at boot, make a systemd unit that runs `telldus-mqtt --nodaemon`.
+- If the library is not found: `sudo ldconfig`.
 
-Or run `scripts/setup-linux-deps.sh` to install all of the dependencies above. Run the tests with `cd build && ctest`. The tests use a simulated TellStick, so no hardware is needed.
+Or run `scripts/setup-linux-deps.sh` to install the dependencies for build and test. Run the tests with `cd build && ctest`. The tests use a simulated TellStick, so no hardware is needed.
 
 ### Windows 11
 Get the zip `telldus-mqtt-<version>-win64` from the "Windows zip" workflow on the [Actions](https://github.com/PeterFromSweden/telldus-mqtt/actions) page. Unpack it. Install [TelldusCenter 2.1.2](http://download.telldus.com/TellStick/Software/TelldusCenter/TelldusCenter-2.1.2.exe) (driver, Telldus Service and `TelldusCore.dll`) and use an MQTT broker. Then follow `README.txt` in the zip.
