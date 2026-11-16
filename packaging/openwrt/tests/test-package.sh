@@ -1,6 +1,6 @@
 #!/bin/sh
 # Test the uci-defaults script and start_service of the init script of
-# openwrt/package without OpenWrt. The paths in the scripts are changed to
+# packaging/openwrt/package without OpenWrt. The paths in the scripts are changed to
 # a temp directory. procd, logger, jsonfilter and telldusd are stubs.
 # Needs ucode with the uci and fs modules, and the uci program.
 # Exit 77 (skipped) if one is missing.

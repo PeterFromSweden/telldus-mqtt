@@ -37,7 +37,7 @@ Bridge between Telldus 433 MHz devices and MQTT, with Home Assistant MQTT Discov
   ```
 - `filter-non-transled` (optional): `"yes"` publishes only the sensors and switches with an entry in `devices` or `topic-translation`. The status file (`--status`) shows all of them. Without it, all are published.
 
-On OpenWrt the settings are in UCI (`/etc/config/telldus-mqtt`). The init script makes the JSON file from UCI. See [openwrt/README.md](openwrt/README.md).
+On OpenWrt the settings are in UCI (`/etc/config/telldus-mqtt`). The init script makes the JSON file from UCI. See [packaging/openwrt/README.md](packaging/openwrt/README.md).
 
 `/etc/telldus-mqtt/telldus-mqtt-homeassistant.json` holds the discovery templates and normally needs no changes.
 

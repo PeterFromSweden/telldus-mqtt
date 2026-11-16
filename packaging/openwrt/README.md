@@ -9,6 +9,7 @@ The settings are in the UCI config `/etc/config/telldus-mqtt`. The daemon reads 
 - `telldus-mqtt-tellstick2uci.uc`: the import, one time. It copies the devices of `/etc/tellstick.conf` to the UCI switches, then sets `manage_switches` to `1`. If `manage_switches` is `1` already, it does nothing.
 - `telldus-mqtt-tellstick.uc`: the tellstick.conf parser and writer for the two scripts. Install it in the same directory.
 - `package/`: the draft OpenWrt package that uses the scripts (Makefile, init script, uci-defaults). See [package/README.md](package/README.md).
+- `luci-app-telldus-mqtt/`: the LuCI pages. See [luci-app-telldus-mqtt/README.md](luci-app-telldus-mqtt/README.md).
 - `tests/`: tests for the scripts. `ctest` runs them if `ucode` with the `uci` module is installed. With libconfuse, the tests also read the files as telldusd does.
 
 ## Use

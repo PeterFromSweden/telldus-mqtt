@@ -26,7 +26,7 @@ Design:
 - ucode and a JS LuCI view. No Lua.
 
 Location:
-- This repo: daemon, `openwrt/` (generator, migration), `luci-app-telldus-mqtt/` (moves to openwrt/luci when the status format is stable).
+- This repo: daemon, `packaging/openwrt/` (generator, migration), `packaging/openwrt/luci-app-telldus-mqtt/` (moves to openwrt/luci when the status format is stable).
 - openwrt/packages `utils/telldus-mqtt`: Makefile, init script, default UCI config (Peter, later PR).
 
 Steps, one PR each:
@@ -37,8 +37,8 @@ Steps, one PR each:
 5. tellstick.conf from UCI.
 6. LuCI page. Peter tests it on a router.
 
-The openwrt/packages PR needs (draft: `openwrt/package/`, see its README):
-- Makefile: depends on ucode, ucode-mod-uci, ucode-mod-fs. Install `openwrt/telldus-mqtt-uci2json.uc` and `openwrt/telldus-mqtt-json2uci.uc` (e.g. in `/usr/share/telldus-mqtt/`). Conffiles `/etc/config/telldus-mqtt` and the old `/etc/telldus-mqtt/*.json` (opkg deletes a file that the new package does not have). The package installs a short `telldus-mqtt.json` without devices, not the example, so a new install migrates no devices.
+The openwrt/packages PR needs (draft: `packaging/openwrt/package/`, see its README):
+- Makefile: depends on ucode, ucode-mod-uci, ucode-mod-fs. Install `packaging/openwrt/telldus-mqtt-uci2json.uc` and `packaging/openwrt/telldus-mqtt-json2uci.uc` (e.g. in `/usr/share/telldus-mqtt/`). Conffiles `/etc/config/telldus-mqtt` and the old `/etc/telldus-mqtt/*.json` (opkg deletes a file that the new package does not have). The package installs a short `telldus-mqtt.json` without devices, not the example, so a new install migrates no devices.
 - Default `/etc/config/telldus-mqtt`: `config main 'main'` with enabled 1, host 127.0.0.1, port 1883, user/pass empty, offline_seconds 600, topic_prefix home.
 - uci-defaults script: if telldus-mqtt.json exists, run `ucode .../telldus-mqtt-json2uci.uc /etc/telldus-mqtt/telldus-mqtt.json`. It does nothing if the UCI config has device sections.
 - Init script: run `ucode .../telldus-mqtt-uci2json.uc /var/etc/telldus-mqtt.json` (writes mode 0600, exit code not 0 on error), start with `--config /var/etc/telldus-mqtt.json`, respawn, reload on UCI change. No `-` options after the script name (ucode reads them).

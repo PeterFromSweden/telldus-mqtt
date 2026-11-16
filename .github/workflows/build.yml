@@ -19,7 +19,7 @@ jobs:
       - name: Test
         run: cd build && ctest --output-on-failure
       - name: Test LuCI logic
-        run: node luci-app-telldus-mqtt/tests/check-syntax.js && node luci-app-telldus-mqtt/tests/test-logic.js
+        run: node packaging/openwrt/luci-app-telldus-mqtt/tests/check-syntax.js && node packaging/openwrt/luci-app-telldus-mqtt/tests/test-logic.js
 
   openwrt:
     name: OpenWrt ${{ matrix.sdk }}
@@ -35,7 +35,7 @@ jobs:
         with:
           path: src
 
-      # Builds openwrt/package (the draft for openwrt/packages) with the
+      # Builds packaging/openwrt/package (the draft for openwrt/packages) with the
       # source replaced by this checkout, and luci-app-telldus-mqtt in the
       # luci feed tree (it includes ../../luci.mk).
       - name: Build in OpenWrt SDK
@@ -52,7 +52,7 @@ jobs:
                 feeds.conf.default > feeds.conf
             ./scripts/feeds update -a
             # luci.mk takes the version from git: commit the app in the feed
-            cp -r /src/luci-app-telldus-mqtt feeds/luci/applications/
+            cp -r /src/packaging/openwrt/luci-app-telldus-mqtt feeds/luci/applications/
             git -C feeds/luci add applications/luci-app-telldus-mqtt
             git -C feeds/luci -c user.name=ci -c user.email=ci@localhost \
                 commit -q -m "luci-app-telldus-mqtt from CI"
@@ -60,7 +60,7 @@ jobs:
             ./scripts/feeds install -a
             # Replace the telldus-mqtt package of the packages feed
             rm -f package/feeds/packages/telldus-mqtt
-            cp -r /src/openwrt/package package/telldus-mqtt
+            cp -r /src/packaging/openwrt/package package/telldus-mqtt
             mk=package/telldus-mqtt/Makefile
             sed -i -e "/^PKG_SOURCE_PROTO/d" -e "/^PKG_SOURCE_URL/d" \
                    -e "/^PKG_SOURCE_VERSION/d" -e "/^PKG_MIRROR_HASH/d" "$mk"
