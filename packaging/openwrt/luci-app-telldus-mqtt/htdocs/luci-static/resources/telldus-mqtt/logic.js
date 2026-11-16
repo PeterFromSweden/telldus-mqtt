@@ -317,6 +317,15 @@ function nextSwitchId(sections, devices) {
 	return String(max + 1);
 }
 
+// The id for the On and Off buttons (tdtool --on <id>), or null. Only a
+// switch of the status file: telldusd has it.
+function switchId(row) {
+	if (!row || row.type != 'switch' || !row.heard || row.duplicate || !/^[0-9]{1,9}$/.test(str(row.id)))
+		return null;
+	var id = parseInt(str(row.id), 10);
+	return (id >= 1) ? id : null;
+}
+
 // ---- Raw RF events (button capture) ----
 
 // A key for an event, with its time: a repeat of a button has a new time
@@ -492,6 +501,7 @@ return baseclass.extend({
 	replaceCandidates: replaceCandidates,
 	planReplace: planReplace,
 	nextSwitchId: nextSwitchId,
+	switchId: switchId,
 	eventKey: eventKey,
 	captureStart: captureStart,
 	capturedEvents: capturedEvents,

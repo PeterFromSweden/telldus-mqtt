@@ -59,6 +59,27 @@ return view.extend(Object.assign(common.deviceView('switch'), {
 		]);
 	},
 
+	handleSwitch: function(id, on, ev) {
+		return common.setSwitch(id, on);
+	},
+
+	// On and Off buttons: switch the device now. No Save & Apply.
+	switchButtons: function(row) {
+		var id = logic.switchId(row);
+		if (id == null)
+			return [];
+		return [ E('br'),
+			E('button', {
+				'class': 'cbi-button cbi-button-action',
+				'click': ui.createHandlerFn(this, 'handleSwitch', id, true)
+			}, [ _('On') ]),
+			' ',
+			E('button', {
+				'class': 'cbi-button cbi-button-action',
+				'click': ui.createHandlerFn(this, 'handleSwitch', id, false)
+			}, [ _('Off') ]) ];
+	},
+
 	renderTable: function(rows) {
 		var dups = logic.duplicateTopics(rows);
 		var table = E('table', { 'class': 'table cbi-section-table' }, [
@@ -81,7 +102,7 @@ return view.extend(Object.assign(common.deviceView('switch'), {
 		for (var i = 0; i < rows.length; i++) {
 			var r = rows[i];
 
-			var state = [ (r.values && r.values.state) ? String(r.values.state) : '-' ];
+			var state = [ (r.values && r.values.state) ? String(r.values.state) : '-' ].concat(this.switchButtons(r));
 			if (!r.heard)
 				state.push(E('br'), E('em', {}, [ r.rf.protocol
 					? _('Not in telldusd yet: Save & Apply')

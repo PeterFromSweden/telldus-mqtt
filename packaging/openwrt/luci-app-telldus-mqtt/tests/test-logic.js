@@ -151,6 +151,19 @@ test('mergeDevices switches', function() {
 	assert.strictEqual(logic.formatRf(m.rows[2].rf), 'sartano codeswitch, code 0101010101');
 });
 
+test('switchId', function() {
+	const m = logic.mergeDevices('switch', status.devices, sections, SERIAL, 'home');
+	assert.deepStrictEqual(m.rows.map(logic.switchId), [ 2, 11, null ]);
+	const row = (id, more) => Object.assign({ type: 'switch', id: id, heard: true, duplicate: false }, more);
+	assert.strictEqual(logic.switchId(row('999999999')), 999999999);
+	assert.strictEqual(logic.switchId(row('0')), null);
+	assert.strictEqual(logic.switchId(row('1000000000')), null);
+	assert.strictEqual(logic.switchId(row('5;reboot')), null);
+	assert.strictEqual(logic.switchId(row('5', { duplicate: true })), null);
+	assert.strictEqual(logic.switchId(row('5', { type: 'sensor' })), null);
+	assert.strictEqual(logic.switchId(null), null);
+});
+
 test('mergeDevices: bad input', function() {
 	const m = logic.mergeDevices('sensor', null, null, null, 'home');
 	assert.deepStrictEqual(m, { rows: [], otherGateways: 0 });
