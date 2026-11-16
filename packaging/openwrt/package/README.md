@@ -14,7 +14,7 @@ This is the draft of `utils/telldus-mqtt` in openwrt/packages. Copy `Makefile` a
   A UCI change (LuCI Save & Apply) runs these steps again. procd restarts the daemon if the generated file changed.
 - `files/telldus-mqtt.config`: the default `/etc/config/telldus-mqtt`.
 - `files/telldus-mqtt.defaults`: `/etc/uci-defaults/telldus-mqtt`. It copies an old `/etc/telldus-mqtt/telldus-mqtt.json` to UCI (`json2uci`), then imports the devices of `/etc/tellstick.conf` (`tellstick2uci`). It never fails and is safe to run again.
-- `files/telldus-mqtt.json`: a short JSON without devices. It is only for the upgrade from 0.4: opkg keeps a changed conffile only if the new package has the file. The daemon does not read it.
+- `/etc/telldus-mqtt/telldus-mqtt.json`: the default config of the repository root (no devices). It is only for the upgrade from 0.4: opkg keeps a changed conffile only if the new package has the file. The daemon does not read it.
 
 ## Import of tellstick.conf
 The import needs the TellStick serial if more TellSticks have sections with the same switch id. At the first install there is no status file, thus no serial. Then the import stops and changes nothing, and the uci-defaults script makes `/etc/telldus-mqtt/tellstick-import-pending`. The init script runs the import again at each start when the status file has a serial. The status file is in `/var/run`, so do a restart after the daemon found the TellStick. To stop the retries, delete the file.

@@ -48,7 +48,7 @@ define Package/telldus-mqtt/install
 	$(INSTALL_DIR)  $(1)/usr/bin
 	$(INSTALL_BIN)  $(PKG_INSTALL_DIR)/usr/bin/telldus-mqtt $(1)/usr/bin
 	$(INSTALL_DIR)  $(1)/etc/telldus-mqtt
-	$(INSTALL_CONF) ./files/telldus-mqtt.json $(1)/etc/telldus-mqtt
+	$(INSTALL_CONF) $(PKG_INSTALL_DIR)/usr/etc/telldus-mqtt/telldus-mqtt.json $(1)/etc/telldus-mqtt
 	$(INSTALL_CONF) $(PKG_INSTALL_DIR)/usr/etc/telldus-mqtt/telldus-mqtt-homeassistant.json $(1)/etc/telldus-mqtt
 	$(INSTALL_DIR)  $(1)/usr/share/telldus-mqtt
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/packaging/openwrt/telldus-mqtt-*.uc $(1)/usr/share/telldus-mqtt

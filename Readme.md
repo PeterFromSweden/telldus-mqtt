@@ -13,7 +13,7 @@ Bridge between Telldus 433 MHz devices and MQTT, with Home Assistant MQTT Discov
 | Switch command | `telldus/{serno}/switch/{device_no}/set` (`ON`/`OFF`) |
 
 ## Configuration
-`/etc/telldus-mqtt/telldus-mqtt.json`:
+`/etc/telldus-mqtt/telldus-mqtt.json`. The installed file has no devices: all sensors and switches are published with the default topics.
 ```json
 {
   "host": "127.0.0.1",
@@ -21,13 +21,16 @@ Bridge between Telldus 433 MHz devices and MQTT, with Home Assistant MQTT Discov
   "user": "",
   "pass": "",
   "sensor-offline-seconds": 600,
-  "topic-translation": [
-    { "telldus": "telldus/A703AKOX/switch/2", "mqtt": "Home/Office", "name": "Office" }
-  ]
+  "devices": []
 }
 ```
 - `sensor-offline-seconds`: a sensor is marked offline when silent this long.
 - `topic-translation` (optional): replaces the long topics with your own; `name` is the Home Assistant name.
+  ```json
+  "topic-translation": [
+    { "telldus": "telldus/A703AKOX/switch/2", "mqtt": "Home/Office", "name": "Office" }
+  ]
+  ```
 - `devices` (optional): names a device without the TellStick serial in the key. `type` is `sensor` or `switch`, `id` is the sensor id or the switch device number. `gateway` (optional) is a TellStick serial: the entry is then used only with that TellStick. If an entry in `devices` and in `topic-translation` match, `devices` is used.
   ```json
   "devices": [

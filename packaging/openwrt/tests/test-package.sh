@@ -57,7 +57,7 @@ new_root() {
 	rm -rf "$root" "$tmp/log" "$tmp/procd" "$tmp/telldusd"
 	mkdir -p "$root/etc/config" "$root/etc/telldus-mqtt" "$root/etc/init.d" "$root/var/run"
 	cp "$dir/package/files/telldus-mqtt.config" "$root/etc/config/telldus-mqtt"
-	cp "$dir/package/files/telldus-mqtt.json" "$root/etc/telldus-mqtt/"
+	cp "$dir/../../telldus-mqtt.json" "$root/etc/telldus-mqtt/"
 	cat > "$root/etc/init.d/telldusd" <<-EOF
 	#!/bin/sh
 	echo "\$1" >> "$tmp/telldusd"
