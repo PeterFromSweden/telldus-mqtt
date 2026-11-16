@@ -10,7 +10,6 @@ static int logToSyslogLevel(int loglevel);
 
 void MySysLog_Init(int destination, const char* pgmName, int uptologlevel)
 {
-  printf("Some kind of windows syslog...\r\n");
   upToLevel = uptologlevel;
 }
 

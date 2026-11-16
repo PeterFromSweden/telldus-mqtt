@@ -36,8 +36,11 @@ Names and topics (optional):
     { "type": "switch", "id": "2", "name": "Office", "topic": "Home/Office" }
   ]
   "name" is the name in Home Assistant. "topic" replaces the long MQTT topic.
-  The log shows the id of each sensor ("Sensor ... is now online").
-  "filter-non-transled": "yes" publishes only the devices in the list.
+  To find the ids: run one time with "--status status.json" and read
+  that file. The switch ids are the numbers in TelldusCenter.
+  Devices that are not in the list are published too, with the topic
+  telldus/<serial>/... and in Home Assistant. To publish only the
+  devices in the list, add:  "filter-non-transled": "yes"
 More information: https://github.com/PeterFromSweden/telldus-mqtt
 
 telldus-mqtt-homeassistant.json has the Home Assistant templates. Usually
