@@ -27,7 +27,7 @@ define Package/telldus-mqtt
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=Telldus MQTT converter
-  DEPENDS:= +telldus-core +libmosquitto +cJSON +ucode +ucode-mod-uci +ucode-mod-fs
+  DEPENDS:=+telldus-core +libmosquitto +cJSON +ucode +ucode-mod-uci +ucode-mod-fs
 endef
 
 define Package/telldus-mqtt/description
