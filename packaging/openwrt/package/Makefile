@@ -11,8 +11,8 @@ PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/PeterFromSweden/telldus-mqtt.git
-PKG_SOURCE_VERSION:=2fdf9b2f5d7c50de3fae750f8299ab283eab4d19
-PKG_MIRROR_HASH:=skip
+PKG_SOURCE_VERSION:=4a7e248635da495db916f56cda37dad264f6285f
+PKG_MIRROR_HASH:=cdda2bb3a5574ef494ac07bb9216068fa06f8a76b3ce37dd538749018488bb45
 
 PKG_MAINTAINER:=Peter Liedholm <PeterFromSwe884@gmail.com>
 PKG_LICENSE:=LGPL-2.1-or-later
@@ -24,16 +24,16 @@ include $(INCLUDE_DIR)/cmake.mk
 CMAKE_OPTIONS += -DBUILD_TESTING=OFF
 
 define Package/telldus-mqtt
-	SECTION:=utils
-	CATEGORY:=Utilities
-	TITLE:=Telldus MQTT converter
-	DEPENDS:= +telldus-core +libmosquitto +cJSON +ucode +ucode-mod-uci +ucode-mod-fs
+  SECTION:=utils
+  CATEGORY:=Utilities
+  TITLE:=Telldus MQTT converter
+  DEPENDS:= +telldus-core +libmosquitto +cJSON +ucode +ucode-mod-uci +ucode-mod-fs
 endef
 
 define Package/telldus-mqtt/description
-	MQTT protocol converter for Telldus USB-based 433 MHz RF transceiver for home automation.
-	Settings in the UCI config telldus-mqtt (see luci-app-telldus-mqtt).
-	Please see https://github.com/PeterFromSweden/telldus-mqtt/blob/master/Readme.md for more information.
+  MQTT protocol converter for Telldus USB-based 433 MHz RF transceiver for home automation.
+  Settings in the UCI config telldus-mqtt (see luci-app-telldus-mqtt).
+  Please see https://github.com/PeterFromSweden/telldus-mqtt/blob/master/Readme.md for more information.
 endef
 
 # telldus-mqtt.json: only for the upgrade from 0.4. The uci-defaults script
