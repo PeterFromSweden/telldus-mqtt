@@ -43,7 +43,7 @@ function str(v) {
 
 // As derive_topic() in openwrt/telldus-mqtt-uci2json.uc
 function deriveTopic(prefix, name) {
-	name = str(name).replace(/[\/+#]/g, '_');
+	name = str(name).replace(/[/+#]/g, '_');
 	prefix = str(prefix);
 	return (prefix != '') ? prefix + '/' + name : name;
 }
@@ -129,7 +129,7 @@ function mergeDevices(type, devices, sections, serial, prefix) {
 	}
 
 	devices = Array.isArray(devices) ? devices : [];
-	for (var i = 0; i < devices.length; i++) {
+	for (let i = 0; i < devices.length; i++) {
 		var d = devices[i];
 		if (!d || d.type != type || str(d.id) == '' || matched[str(d.id)])
 			continue;
@@ -146,7 +146,7 @@ function mergeDevices(type, devices, sections, serial, prefix) {
 	}
 
 	var first = {};
-	for (var j = 0; j < mine.length; j++) {
+	for (let j = 0; j < mine.length; j++) {
 		var id = str(mine[j].id);
 		if (used[mine[j]['.name']]) {
 			first[id] = true;
@@ -311,7 +311,7 @@ function nextSwitchId(sections, devices) {
 	}
 	for (var i = 0; i < (sections || []).length; i++)
 		take(str(sections[i].type), sections[i].id);
-	for (var i = 0; i < (Array.isArray(devices) ? devices : []).length; i++)
+	for (let i = 0; i < (Array.isArray(devices) ? devices : []).length; i++)
 		if (devices[i])
 			take(devices[i].type, devices[i].id);
 	return String(max + 1);
