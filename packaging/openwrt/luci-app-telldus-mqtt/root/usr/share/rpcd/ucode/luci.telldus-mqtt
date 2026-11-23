@@ -17,7 +17,8 @@ import { connect } from 'ubus';
 const STATUS_FILE = '/var/run/telldus-mqtt.json';
 const SERVICE = 'telldus-mqtt';
 const TDTOOL_DIRS = [ '/usr/bin', '/usr/sbin', '/bin', '/sbin' ];
-const TDTOOL_TIMEOUT_MS = 15000;
+// rpcd is single-threaded: keep the blocking tdtool call short
+const TDTOOL_TIMEOUT_MS = 3000;
 
 // Exit codes of tdtool (minus the telldus-core error code)
 const TDTOOL_ERRORS = {
@@ -68,7 +69,7 @@ function set_switch(id, on) {
 	if (rc == 0)
 		return { ok: true };
 	if (rc < 0)
-		return { ok: false, error: 'tdtool did not finish' };
+		return { ok: false, error: 'tdtool did not finish in 3 s' };
 	return { ok: false, error: TDTOOL_ERRORS['' + rc] || ('tdtool failed (exit code ' + rc + ')') };
 }
 

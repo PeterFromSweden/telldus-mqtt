@@ -2,11 +2,15 @@ msgid ""
 msgstr "Content-Type: text/plain; charset=UTF-8"
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:278
-msgid "\"Manage switches\" is off in Settings. This page names the switches of telldusd, but it does not change tellstick.conf."
+msgid ""
+"\"Manage switches\" is off in Settings. This page names the switches of "
+"telldusd, but it does not change tellstick.conf."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:174
-msgid "\"Manage switches\" is off in Settings: the switch is saved, but telldusd does not get it."
+msgid ""
+"\"Manage switches\" is off in Settings: the switch is saved, but telldusd "
+"does not get it."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:141
@@ -25,7 +29,9 @@ msgid "%s ago"
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/settings.js:66
-msgid "A sensor is offline when it sends nothing for this time. 0 = never offline. Default: 600."
+msgid ""
+"A sensor is offline when it sends nothing for this time. 0 = never offline. "
+"Default: 600."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/common.js:225
@@ -37,11 +43,15 @@ msgid "A typed topic stays when you change the name or the prefix."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/common.js:281
-msgid "An empty MQTT topic field gives the topic %s/<name>. Change the prefix on the Settings tab."
+msgid ""
+"An empty MQTT topic field gives the topic %s/<name>. Change the prefix on "
+"the Settings tab."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/common.js:282
-msgid "An empty MQTT topic field gives the topic <name>. Change the prefix on the Settings tab."
+msgid ""
+"An empty MQTT topic field gives the topic <name>. Change the prefix on the "
+"Settings tab."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/settings.js:37
@@ -59,7 +69,9 @@ msgid "Cancel"
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/common.js:120
-msgid "Cannot get the status from the router. Restart rpcd (or the router) after you install the page."
+msgid ""
+"Cannot get the status from the router. Restart rpcd (or the router) after "
+"you install the page."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/common.js:82
@@ -121,13 +133,18 @@ msgstr ""
 msgid "Give this name to a new sensor, for example after a battery change"
 msgstr ""
 
+#: applications/luci-app-telldus-mqtt/root/usr/share/rpcd/acl.d/luci-app-telldus-mqtt.json:3
+msgid "Grant access to telldus-mqtt status and configuration"
+msgstr ""
+
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:218
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:236
 msgid "Heard"
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/settings.js:38
-msgid "Host name or IP address of the MQTT broker. Default: 127.0.0.1 (this router)."
+msgid ""
+"Host name or IP address of the MQTT broker. Default: 127.0.0.1 (this router)."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:89
@@ -169,7 +186,9 @@ msgid "MQTT topic:"
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:204
-msgid "Make a switch from a button of a remote control: click Start, then press the button on the remote control."
+msgid ""
+"Make a switch from a button of a remote control: click Start, then press the "
+"button on the remote control."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/settings.js:71
@@ -197,7 +216,9 @@ msgid "New sensor (newest first):"
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:42
-msgid "No new sensor without a name is heard. Put the battery in the new sensor, wait until it shows in the list, then try again."
+msgid ""
+"No new sensor without a name is heard. Put the battery in the new sensor, "
+"wait until it shows in the list, then try again."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:96
@@ -205,7 +226,8 @@ msgid "No sensors heard yet. Sensors send every few minutes."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:99
-msgid "No switches yet. Capture a button of a remote control below to make one."
+msgid ""
+"No switches yet. Capture a button of a remote control below to make one."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/status.js:72
@@ -274,7 +296,11 @@ msgid "On"
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/settings.js:72
-msgid "On: the switches on the Switches page are the devices of telldusd (/etc/tellstick.conf). Devices that are only in tellstick.conf are removed. Usually the package turns this on when it copies the devices of tellstick.conf."
+msgid ""
+"On: the switches on the Switches page are the devices of telldusd (/etc/"
+"tellstick.conf). Devices that are only in tellstick.conf are removed. "
+"Usually the package turns this on when it copies the devices of tellstick."
+"conf."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/settings.js:51
@@ -286,7 +312,9 @@ msgid "Press a button on the remote control now."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:252
-msgid "Press a button on the remote control. The radio messages heard after Start show here, newest first."
+msgid ""
+"Press a button on the remote control. The radio messages heard after Start "
+"show here, newest first."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:90
@@ -427,15 +455,22 @@ msgid "Telldus MQTT settings"
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:171
-msgid "The TellStick sends the same code as the remote control. A receiver that reacts to this button also reacts to the new switch."
+msgid ""
+"The TellStick sends the same code as the remote control. A receiver that "
+"reacts to this button also reacts to the new switch."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/common.js:139
-msgid "The TellStick serial is not known yet. Only devices for all TellSticks are shown."
+msgid ""
+"The TellStick serial is not known yet. Only devices for all TellSticks are "
+"shown."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:155
-msgid "The sensors that the service heard since it started, and the named sensors. Type a name to publish a sensor to MQTT and Home Assistant. Sensors without a name are not published. Click Save & Apply when you are done."
+msgid ""
+"The sensors that the service heard since it started, and the named sensors. "
+"Type a name to publish a sensor to MQTT and Home Assistant. Sensors without "
+"a name are not published. Click Save & Apply when you are done."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/common.js:126
@@ -455,11 +490,15 @@ msgid "The service restarts with the new settings after Save & Apply."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/status.js:90
-msgid "The service stopped or is starting. The values are from the last time it ran."
+msgid ""
+"The service stopped or is starting. The values are from the last time it ran."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/settings.js:56
-msgid "The start of the MQTT topics. With the prefix \"home\", a sensor with the name \"Garage\" gets the topic \"home/Garage\". A device with a typed topic keeps its topic. Default: home."
+msgid ""
+"The start of the MQTT topics. With the prefix \"home\", a sensor with the "
+"name \"Garage\" gets the topic \"home/Garage\". A device with a typed topic "
+"keeps its topic. Default: home."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/common.js:124
@@ -467,20 +506,30 @@ msgid "The status file %s is not valid."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:298
-msgid "The switches of telldusd. Type a name to publish a switch to MQTT and Home Assistant. Switches without a name are not published. Click Save & Apply when you are done."
+msgid ""
+"The switches of telldusd. Type a name to publish a switch to MQTT and Home "
+"Assistant. Switches without a name are not published. Click Save & Apply "
+"when you are done."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/common.js:122
-msgid "There is no status file %s. Start the service. The service must write the status file (option --status)."
+msgid ""
+"There is no status file %s. Start the service. The service must write the "
+"status file (option --status)."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/switches.js:170
-msgid "This type of remote control is not known to this page. The options are copied from the radio message. They can need a change in /etc/config/telldus-mqtt."
+msgid ""
+"This type of remote control is not known to this page. The options are "
+"copied from the radio message. They can need a change in /etc/config/telldus-"
+"mqtt."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/settings.js:77
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/status.js:17
-msgid "To run an MQTT broker on this router, install mosquitto and luci-app-mosquitto."
+msgid ""
+"To run an MQTT broker on this router, install mosquitto and luci-app-"
+"mosquitto."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/settings.js:55
@@ -497,7 +546,9 @@ msgid "Unknown error"
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/sensors.js:57
-msgid "Use this when a sensor has a new id, for example after a battery change. The new sensor gets the name and topic of \"%s\"."
+msgid ""
+"Use this when a sensor has a new id, for example after a battery change. The "
+"new sensor gets the name and topic of \"%s\"."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/settings.js:48
@@ -509,17 +560,17 @@ msgstr ""
 msgid "Values"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/logic.js:193
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/logic.js:192
 msgid "d"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/logic.js:191
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/logic.js:193
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/logic.js:190
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/logic.js:192
 msgid "h"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/logic.js:188
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/logic.js:191
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/logic.js:187
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/logic.js:190
 msgid "min"
 msgstr ""
 
@@ -527,7 +578,7 @@ msgstr ""
 msgid "offline"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/logic.js:185
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/logic.js:184
 msgid "s"
 msgstr ""
 
@@ -536,7 +587,9 @@ msgid "serial %s"
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/status.js:113
-msgid "telldus-mqtt connects a TellStick (433 MHz) to an MQTT broker. Home Assistant finds the named sensors and switches."
+msgid ""
+"telldus-mqtt connects a TellStick (433 MHz) to an MQTT broker. Home "
+"Assistant finds the named sensors and switches."
 msgstr ""
 
 #: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/view/telldus-mqtt/status.js:60
