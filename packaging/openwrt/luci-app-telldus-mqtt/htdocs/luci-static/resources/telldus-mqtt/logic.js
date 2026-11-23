@@ -259,7 +259,7 @@ function planName(row, name, section, sections, serial) {
 	return ops;
 }
 
-// A topic must not have MQTT wildcards and must not be empty
+// A topic must not have MQTT wildcards. Empty = derived from the name.
 function validTopic(topic) {
 	topic = str(topic);
 	return topic == '' || !/[+#\0]/.test(topic);

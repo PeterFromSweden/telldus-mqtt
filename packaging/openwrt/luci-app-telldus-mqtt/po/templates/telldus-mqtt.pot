@@ -560,17 +560,17 @@ msgstr ""
 msgid "Values"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/logic.js:193
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/logic.js:192
 msgid "d"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/logic.js:191
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/logic.js:193
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/logic.js:190
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/logic.js:192
 msgid "h"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/logic.js:188
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/logic.js:191
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/logic.js:187
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/logic.js:190
 msgid "min"
 msgstr ""
 
@@ -578,7 +578,7 @@ msgstr ""
 msgid "offline"
 msgstr ""
 
-#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/logic.js:185
+#: applications/luci-app-telldus-mqtt/htdocs/luci-static/resources/telldus-mqtt/logic.js:184
 msgid "s"
 msgstr ""
 
